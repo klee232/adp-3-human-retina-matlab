@@ -1,0 +1,185 @@
+% Brief User Introduction:
+% This function is built to initialize the pca kernel for pca convolutional
+% la
+
+% Input Parameter:
+% network: trained deep learning neural netowrk (dlnetwork object)
+% orig_test_data: data for testing purpose (for our case, OCTA
+% segmentation data)
+% orig_test_gt_data: groundtruth for testing purpose (for our case, labels for each sample)
+
+% Output Parameter:
+% test_loss: testing loss (testing entropy loss)
+
+
+function network=initialize_weight_pca(network,data)
+    %% Weight initialization for pca convolution layer 1
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_lv1'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_lv1') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_1]=initialize_weight_pca_convolution(data, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_1;
+
+    %% Weight initialization for pca convolution layer 2
+    % conv_lyr_xy_lv2
+    mean_removal_lyr_xy_lv2_out=forward(network,data,'Outputs','mean_removal_lyr_xy_lv2');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_xy_lv2'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_xy_lv2') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_xy_2]=initialize_weight_pca_convolution(mean_removal_lyr_xy_lv2_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_xy_2;
+    % conv_lyr_z_lv2
+    mean_removal_lyr_z_lv2_out=forward(network, data,'Outputs','mean_removal_lyr_z_lv2');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_z_lv2'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_z_lv2') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_z_2]=initialize_weight_pca_convolution(mean_removal_lyr_z_lv2_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_z_2;
+
+    %% Weight initialization for pca convolution layer 3
+    % conv_lyr_red_lv3
+    mean_removal_lyr_red_lv3_out=forward(network, data, 'Outputs','mean_removal_lyr_red_lv3');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_red_lv3'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_red_lv3') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_red_3]=initialize_weight_pca_convolution(mean_removal_lyr_red_lv3_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_red_3;
+    % conv_lyr_xy_lv3
+    mean_removal_lyr_xy_lv3_out=forward(network, data,'Outputs','mean_removal_lyr_xy_lv3');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_xy_lv3'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_xy_lv3') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_xy_3]=initialize_weight_pca_convolution(mean_removal_lyr_xy_lv3_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_xy_3;
+    % conv_lyr_z_lv3
+    mean_removal_lyr_z_lv3_out=forward(network, data,'Outputs','mean_removal_lyr_z_lv3');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_z_lv3'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_z_lv3') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_z_3]=initialize_weight_pca_convolution(mean_removal_lyr_z_lv3_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_z_3;
+
+    %% Weight initialization for pca convolution layer 4
+    % conv_lyr_red_lv4
+    mean_removal_lyr_red_lv4_out=forward(network, data,'Outputs','mean_removal_lyr_red_lv4');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_red_lv4'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_red_lv4') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_red_4]=initialize_weight_pca_convolution(mean_removal_lyr_red_lv4_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_red_4;
+    % conv_lyr_xy_lv4
+    mean_removal_lyr_xy_lv4_out=forward(network, data,'Outputs','mean_removal_lyr_xy_lv4');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_xy_lv4'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_xy_lv4') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_xy_4]=initialize_weight_pca_convolution(mean_removal_lyr_xy_lv4_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_xy_4;
+    % conv_lyr_z_lv4
+    mean_removal_lyr_z_lv4_out=forward(network, data,'Outputs','mean_removal_lyr_z_lv4');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_z_lv4'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_z_lv4') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_z_4]=initialize_weight_pca_convolution(mean_removal_lyr_z_lv4_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_z_4;
+
+    %% Weight initialization for pca convolution layer 5
+    % conv_lyr_red_lv5
+    mean_removal_lyr_red_lv5_out=forward(network, data,'Outputs','mean_removal_lyr_red_lv5');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_red_lv5'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_red_lv5') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_red_5]=initialize_weight_pca_convolution(mean_removal_lyr_red_lv5_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_red_5;
+    % conv_lyr_xy_lv5
+    mean_removal_lyr_xy_lv5_out=forward(network, data,'Outputs','mean_removal_lyr_xy_lv5');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_xy_lv5'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_xy_lv5') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_xy_5]=initialize_weight_pca_convolution(mean_removal_lyr_xy_lv5_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_xy_5;
+    % conv_lyr_z_lv5
+    mean_removal_lyr_z_lv5_out=forward(network, data,'Outputs','mean_removal_lyr_z_lv5');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_lyr_z_lv5'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_lyr_z_lv5') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_z_5]=initialize_weight_pca_convolution(mean_removal_lyr_z_lv5_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_z_5;
+    % conv_lyr_red_2_lv5 
+    mean_removal_lyr_red_2_lv5_out=forward(network, data,'Outputs','mean_removal_lyr_red_2_lv5');
+    layerIdx=find(arrayfun(@(x) strcmp(x.Name, 'conv_red_2_lyr_lv5'), network.Layers));
+    paramIndex_W=strcmp(network.Learnables.Layer, 'conv_red_2_lyr_lv5') & strcmp(network.Learnables.Parameter,'Weights');
+    num_filter=network.Layers(layerIdx).NumFilters;
+    kernel_size=network.Layers(layerIdx).FilterSize;
+    [Weight_pca_lyr_red_2_5]=initialize_weight_pca_convolution(mean_removal_lyr_red_2_lv5_out, kernel_size(1), kernel_size(2), kernel_size(3), num_filter);
+    network.Learnables.Value{paramIndex_W} = Weight_pca_lyr_red_2_5;
+
+end
+
+
+
+function [Weight]=initialize_weight_pca_convolution(input, kernel_size_z, kernel_size_x, kernel_size_y, num_filter)
+    % for pca convolution, the number of filters can't exced
+    % kernel_size*kernel_size
+    if num_filter<=kernel_size_z*kernel_size_x*kernel_size_y
+        Num_filter = num_filter;
+    else
+        Num_filter = kernel_size_z*kernel_size_x*kernel_size_y;
+    end
+    
+    %% setup learnable parameters
+    % pca weight setup
+    % grab out dimensional information
+    [input_dep, input_height,input_width,input_batch,input_sample]=size(input);
+    % generate linear index for 3d input
+    num_patch_dep=input_dep-kernel_size_z+1;
+    num_patch_height=input_height-kernel_size_x+1;
+    num_patch_width=input_width-kernel_size_y+1;
+    dep_ind_lin=(1:kernel_size_z)'+(0:num_patch_dep-1);
+    height_ind_lin=(1:kernel_size_x)'+(0:num_patch_height-1);
+    width_ind_lin=(1:kernel_size_y)'+(0:num_patch_width-1);
+    dep_ind_lin=reshape(dep_ind_lin,[],1,1,1);
+    height_ind_lin=reshape(height_ind_lin,1,[],1,1);
+    width_ind_lin=reshape(width_ind_lin,1,1,[],1);
+    patches_input=0;
+    for i_sample=1:input_sample
+        % form patches using linear index
+        for i_batch=1:input_batch
+            current_sample_input=input(:,:,:,i_batch,i_sample);
+            current_sample_input=squeeze(current_sample_input);
+            linear_ind=bsxfun(@plus,...
+            bsxfun(@plus, ...
+            dep_ind_lin, (height_ind_lin-1)*input_dep),...
+            (width_ind_lin-1)*input_dep*input_height);
+            current_patches_input=current_sample_input(linear_ind);
+            % reshape into the desired form
+            current_patches_input=reshape(current_patches_input,kernel_size_z*kernel_size_x*kernel_size_y,[]);
+            patches_input=patches_input+extractdata(current_patches_input);
+        end
+
+    end
+    % calculate the pca weights
+    pca_coeff=pca(patches_input*transpose(patches_input));
+    num_vector=size(pca_coeff,2);
+    stop_ind=min([num_vector Num_filter]);
+    eigen_vector=pca_coeff(:,1:stop_ind);
+    if stop_ind<Num_filter
+        eigen_vector=[eigen_vector zeros(size(eigen_vector,1),(Num_filter-stop_ind))];
+    end
+    Weight=reshape(eigen_vector,kernel_size_z,kernel_size_x,kernel_size_y,1,[]);
+    batch_size=size(input,4);
+    Weight=repmat(Weight,1,1,1,batch_size,1);
+    Weight=dlarray(Weight);
+    
+end

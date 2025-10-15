@@ -1,0 +1,379 @@
+% Created by Kuan-Min Lee
+% Created date: Mar. 6th, 2024
+% All rights reserved to Leelab.ai
+
+% Brief User Introduction:
+% This function is built to train the implemented neural network
+
+% Input Parameter:
+% network: implemented deep learning neural netowrk (dlnetwork object)
+% orig_data: data for training purpose (for our case, OCTA
+% segmentation data)
+% orig_gt_data: groundtruth for training purpose (for our case, labels for each sample)
+% orig_valid_data: data for validation purpose (for our case, OCTA
+% segmentation data for validation)
+% orig_valid_gt_data: data for validation purpose (for our case, labels for
+% each sample in validation data)
+% num_epoch: number of epoches for training
+% learning_rate: learning rate for optimization algorithm
+
+% Output Parameter:
+% trained_network: trained neural network (dlnetwork)
+
+
+function trained_network=training_function(network,orig_data,orig_gt_data,oirg_valid_data,orig_valid_gt_data,num_epoch,learning_rate)
+
+    %% Convert data to dlarray
+    % training dataset
+    num_sample=size(orig_data,4);
+    num_fold=1;
+    % num_fold=size(orig_data,5);
+    % input data
+    data=permute(orig_data,[1, 2, 3, 6, 4, 5]);
+    % data=permute(orig_data,[1,2,3,4,5]);
+
+    % label data
+    classes=unique(orig_gt_data);
+    num_class=size(classes,1);
+    gt_data=zeros(size(classes,1),num_sample,num_fold);
+    for i_sample=1:num_sample
+        for i_fold=1:num_fold
+            current_data=orig_gt_data(i_sample,i_fold);
+            [ind]=find(classes==current_data);
+            class_vector=zeros(1,num_class);
+            class_vector(1,ind)=1;
+            gt_data(:,i_sample,i_fold)=class_vector;
+        end
+    end
+
+    % validation data
+    num_valid_sample=size(orig_valid_gt_data,1);
+    num_valid_fold=size(orig_valid_gt_data,2);
+    % input data
+    valid_data=permute(oirg_valid_data,[1,2,3,6,4,5]);
+    % valid_data=permute(oirg_valid_data,[1,2,3,4,5]);
+
+    % label data
+    valid_classes=unique(orig_valid_gt_data);
+    valid_gt_data=zeros(size(valid_classes,1),num_valid_sample,num_valid_fold);
+    for i_sample=1:num_valid_sample
+        for i_fold=1:num_valid_fold
+            current_data=orig_valid_gt_data(i_sample,i_fold);
+            [ind]=find(classes==current_data);
+            class_vector=zeros(1,num_class);
+            class_vector(1,ind)=1;
+            valid_gt_data(:,i_sample,i_fold)=class_vector;
+        end
+    end
+
+
+    %% Initialize training progress
+    % setup variable for storing training and validation loss
+    train_loss=zeros(num_fold,num_epoch,1);
+    valid_loss=zeros(num_valid_fold,num_epoch,1);
+    % setup variable for update parameters
+    gradientDecayFactor = 0.9;
+    squaredGradientDecayFactor = 0.99;
+
+
+    %% Training loop
+    % load parameters if existed
+    if exist("Phase_3_Prediction_model/models/temp","dir")
+       % check if the directory is empty
+       contents=dir("Phase_3_Prediction_model/models/temp");
+       contents=contents(~ismember({contents.name},{'.','..'}));
+       is_empty=isempty(contents);
+       % if not empty load the file
+       if ~is_empty
+           load("Phase_3_Prediction_model/models/temp/net.mat");
+           load("Phase_3_Prediction_model/models/temp/i_fold.mat");
+           load("Phase_3_Prediction_model/models/temp/epoch.mat");
+           start_epoch=epoch;
+           start_fold=i_fold;
+           net=net;
+       % otherwise, initialize parameters
+       else
+           start_epoch=1;
+           start_fold=1;
+       end
+    % if not, initialize the paramters
+    else
+        start_epoch=1;
+        start_fold=1;
+    end
+ 
+    % loop through each fold
+    num_epoch_plot=zeros(num_fold,1);
+    net_storage=cell(num_fold);
+    for i_fold=start_fold:num_fold
+        % net=initialize(network);
+        break_mark_epoch=false;
+        termination_counter=0;
+
+        % create fold data
+        fold_data=data(:,:,:,:,:,i_fold);
+        % fold_data=data(:,:,:,:,i_fold);
+        fold_gt_data=gt_data(:,:,i_fold);
+
+        fold_data=dlarray(fold_data,"SSSCB");
+        % fold_data=dlarray(fold_data,"SSCB");
+        fold_gt_data=dlarray(fold_gt_data,"CB");
+
+        % initialize neural network
+        net=initialize(network);
+
+        % initialize weight for convolution (pca only)
+        % net=initialize(net,fold_data);
+
+        % loop through each epoch
+        % loop through given number of epoches
+        for epoch = start_epoch:num_epoch
+            if break_mark_epoch
+                break;
+            end
+    
+            % initialize average gradient variable for the first epoch
+            if epoch==1
+                average_gradient=[];
+                average_squared_gradient=[];
+            end
+    
+            % use GPU if it can
+            if canUseGPU
+                data=gpuArray(data);
+                gt_data=gpuArray(gt_data);
+                valid_data=gpuArray(valid_data);
+                valid_gt_data=gpuArray(valid_gt_data);
+            end
+
+            
+
+            %% 2D Version loop
+            % compute loss and backpropagation gradients
+            % [gradients, loss]=dlfeval(@modelGradients, net, fold_data, fold_gt_data);
+           
+            
+            % update parameters
+            % [updated_net, average_gradient, average_squared_gradient] = adamupdate(net, gradients,average_gradient,average_squared_gradient, epoch, learning_rate,gradientDecayFactor, squaredGradientDecayFactor);
+            
+            % store training loss
+            % t_loss=loss;
+            % train_loss(i_fold,epoch,1)=t_loss;
+            
+            % validation phase
+            %  fold_valid_data=valid_data(:,:,:,:,i_fold);
+            %  fold_valid_gt_data=valid_gt_data(:,:,i_fold);
+            %  fold_valid_data=dlarray(fold_valid_data,"SSCB");
+            %  fold_valid_gt_data=dlarray(fold_valid_gt_data,"CB");
+            
+            % compute loss for validation
+            %  gt_pred_valid=forward(net, fold_valid_data);
+            %  v_loss=crossentropy(gt_pred_valid,fold_valid_gt_data);
+            %  valid_loss(i_fold,epoch,1)=v_loss;
+            
+            % Display progress
+            %  if mod(epoch, 10) == 0
+            %      msg=strcat("Current fold: ", string(i_fold)," Epoch: ", string(epoch), ", training Loss: ", string(t_loss));
+            %      disp(msg);
+            %      msg=strcat("Current fold: ", string(i_fold)," Epoch: ", string(epoch), ", validation Loss: ", string(v_loss));
+            %      disp(msg);
+            %  end
+            
+            % check overfitting condition
+            %  if epoch>1
+            %      % update network only if current validation loss is smaller
+            %      % calculate average validation loss for current
+            %      % epoch
+            %      if v_loss<best_valid_loss
+            %          best_valid_loss=v_loss;
+            %          net=updated_net;
+            %      else
+            %          termination_counter=termination_counter+1;
+            %      end
+            %  else
+            %      best_valid_loss=v_loss;
+            %      net=updated_net;
+            %  end
+            
+            %  clear v_loss
+            
+            % if the termination_counter hits 10 jumps out the
+            %  % training
+            %  if termination_counter==300
+            %      break_mark_epoch=true;
+            %      num_epoch_plot(i_fold,1)=epoch;
+            %      net_storage{i_fold}=net;
+            %      break;
+            %  end
+
+            %% 3D Version loop 
+            % create accumulated gradient variable (refresh in every epoch)
+            accumulated_gradient=[];
+            accumulated_loss=0;
+    
+            % loop through the training image one by one
+            num_sample=size(data,5);
+
+            for i_sample=1:num_sample
+                % create batched data
+                batch_fold_data=fold_data(:,:,:,:,i_sample);
+                batch_fold_gt_data=fold_gt_data(:,i_sample);
+                % batch_fold_data=dlarray(batch_fold_data,"SSSC");
+                % batch_fold_data=dlarray(batch_fold_data,"SSC");
+                % batch_fold_gt_data=dlarray(batch_fold_gt_data,"CB");
+
+                % Forward and backward pass
+                [gradients, loss]=dlfeval(@modelGradients, net, batch_fold_data, batch_fold_gt_data);
+
+                % add on the current gradients and loss
+                num_row=size(gradients,1);
+                if isempty(accumulated_gradient)
+                    accumulated_gradient=gradients;
+                    for i_row=1:num_row
+                        accumulated_gradient.Value{i_row,1}=(accumulated_gradient.Value{i_row,1})/num_sample;
+                    end
+                else
+                    for i_row=1:num_row
+                        accumulated_gradient.Value{i_row,1}= accumulated_gradient.Value{i_row,1}+(gradients.Value{i_row,1})/num_sample;
+                    end
+                end
+                accumulated_loss=accumulated_loss+loss;
+
+                % if the training reach the end of the sample do the following:
+                % 1. Update network parameters
+                % 2. store training loss
+                % 3. conduct validation
+                % 4. display accumulated loss in current epoch
+                if i_sample==num_sample
+                    % if this is the last fold, update neural network
+                    % Update parameters using Adam optimizer
+                    [updated_net, average_gradient, average_squared_gradient] = adamupdate(net, accumulated_gradient,average_gradient,average_squared_gradient, epoch, learning_rate,gradientDecayFactor, squaredGradientDecayFactor);
+                    % store training loss
+                    t_loss=accumulated_loss/num_sample;
+                    train_loss(i_fold,epoch,1)=t_loss;
+
+                    % validation phase
+                    fold_valid_data=valid_data(:,:,:,:,:,i_fold);
+                    fold_valid_gt_data=valid_gt_data(:,:,i_fold);
+                    fold_valid_data=dlarray(fold_valid_data,"SSSCB");
+                    % fold_valid_data=dlarray(fold_valid_data,"SSCB");
+                    fold_valid_gt_data=dlarray(fold_valid_gt_data,"CB");
+                    gt_pred_valid=forward(net, fold_valid_data);
+                    v_loss=crossentropy(gt_pred_valid,fold_valid_gt_data);
+                    valid_loss(i_fold,epoch,1)=v_loss;
+
+                    % Display progress
+                    if mod(epoch, 10) == 0
+                        msg=strcat("Current fold: ", string(i_fold)," Epoch: ", string(epoch), ", training Loss: ", string(t_loss));
+                        disp(msg);
+                        msg=strcat("Current fold: ", string(i_fold)," Epoch: ", string(epoch), ", validation Loss: ", string(v_loss));
+                        disp(msg);
+                    end
+
+                    % check overfitting condition
+                    if epoch>1
+                        % update network only if current validation loss is smaller
+                        % calculate average validation loss for current
+                        % epoch
+                        if v_loss<best_valid_loss
+                            best_valid_loss=v_loss;
+                            net=updated_net;
+                        else
+                            termination_counter=termination_counter+1;
+                        end
+                    else
+                        best_valid_loss=v_loss;
+                        net=updated_net;
+                    end
+
+                    clear v_loss
+
+                    % if the termination_counter hits 10 jumps out the
+                    % training
+                    if termination_counter==10
+                        break_mark_epoch=true;
+                        num_epoch_plot(i_fold,1)=epoch;
+                        net_storage{i_fold}=net;
+                        start_epoch=1;
+                        break;
+                    end
+                end
+
+            end % end of sample
+
+            % save temporarily intermediate file
+            if ~exist("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp","dir")
+                mkdir("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp")
+            end
+            save ("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp/net.mat","net")
+            save ("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp/i_fold.mat","start_epoch")
+            save ("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp/epoch.mat","epoch")
+
+        end % end of epoch
+    
+        % clean out unecessary variables
+        clear loss gradients gt_pred_valid
+
+        % delete intermediate files
+        delete ("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp/i_fold.mat");
+        delete ("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp/epoch.mat");
+
+        % save current training and validation loss
+        save ("~/data/klee232/train_loss/trained_network_en_face_Img_train_loss.mat", "train_loss")
+        save ("~/data/klee232/valid_loss/trained_network_en_face_Img_valid_loss.mat", "valid_loss")
+    end % end of fold
+
+    % save the trained neural network and delete the intermediate file
+    save("~/data/klee232/trained_model/trained_network_en_face_img_smaller.mat",'net_storage');
+    delete ("~/GitHub/adp-3-human-retina/Phase_3_Prediction_model/models/temp/net.mat");
+
+
+    %% generate training plot
+    for i_fold=1:num_fold
+        figure;
+        plot(1:num_epoch_plot(i_fold,1),train_loss(i_fold,1:num_epoch_plot(i_fold,1),1),1:num_epoch_plot(i_fold,1),valid_loss(i_fold,1:num_epoch_plot(i_fold,1),1));
+        grid on
+        legend('training loss','validation loss');
+        img_title="training loss plot for fold ";
+        fold_num=string(i_fold);
+        img_full_title=strcat(img_title,fold_num);
+        title(img_full_title);
+        ylabel("entropy loss");
+        xlabel("training epoch");
+    
+        % save training loss plot
+        if ~exist("Phase_3_Prediction_model/models/main_model", 'dir')
+            mkdir("Phase_3_Prediction_model/models/main_model")
+        end
+        if ~exist("Phase_3_Prediction_model/models/training_loss_plot","dir")
+            mkdir("Phase_3_Prediction_model/models/training_loss_plot")
+        end
+        path_file='~/data/klee232/training_loss_plot/mean_removal_pca_en_face_train_loss_img_smaller_';
+        fold_file=string(i_fold);
+        type_file='.fig';
+        full_file_name=strcat(path_file,fold_file,type_file);
+        saveas(gcf, full_file_name);  % Save as a PNG image
+    end
+   
+
+    %% return trained neural network
+    trained_network=net_storage;
+    
+    % delete(fullfile("Phase_3_Prediction_model/models/temp/",'*'))
+end
+
+
+% Model gradients function
+function [gradients, error_cross_entropy] = modelGradients(network, data, gt_data)
+    
+    %% Forward Pass
+    gt_pred = forward(network, data); 
+
+    %% Backward Pass
+    % calculate loss
+    error_cross_entropy=crossentropy(gt_pred,gt_data);
+
+    % backpropagation
+    gradients = dlgradient(error_cross_entropy, network.Learnables, 'RetainData',false); 
+
+end
