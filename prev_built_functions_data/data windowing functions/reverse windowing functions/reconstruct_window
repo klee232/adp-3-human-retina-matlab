@@ -1,0 +1,17 @@
+function reconstruct_window(outcome)
+    % setup outcome variable
+    reconstruct_out=zeros(304,304,72);
+    % begin reconstruction
+    for i_num=1:72
+        pointer=1;
+        for i_row=1:38:304
+            for i_col=1:38:304
+                current_wind=outcome(:,:,pointer,i_num);
+                reconstruct_out(i_row:(i_row+37),i_col:(i_col+37),i_num)=current_wind;
+            end
+        end
+    end
+   
+    
+
+end

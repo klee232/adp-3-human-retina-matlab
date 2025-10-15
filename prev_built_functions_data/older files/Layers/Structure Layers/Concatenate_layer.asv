@@ -1,0 +1,83 @@
+% Created by Kuan-Min Lee
+% Created date: Jan. 29th, 2024
+% All rights reserved to Leelab.ai
+
+% Brief User Introduction:
+% I created tis customized convolutional layer class because I can't stand
+% with MATLAB's stupid training network function
+
+% Setup Parameter
+% kernel_size: size of the convolutional kernel (integer)
+% Input Parameter:
+% input_feats: input feature maps (multi-dimensional array)
+% Output Parameter
+% output_feats: output feature maps (multi-dimensional array)
+
+
+classdef Concatenate_layer < nnet.layer.Layer 
+    properties
+    % define the unlearnable parameters for concatenation layer
+        num_data
+        Concate_dim
+    end
+    % define all the functions necessary for the layer
+    methods
+        % constructor function of the layer
+        function layer = Concatenate_layer(name,concate_dim,Num_data)
+            % layer = Convolutional_3D_layer creates a convolutional 3D
+            % layer
+            % set all input properties
+            % String parts
+            layer.Name=name; % name of current layer
+            layer.Description="Concatenate Inputs"; % description of current layer
+            % Parameter parts
+            layer.Concate_dim=concate_dim; % concatenate dimension
+            layer.num_data=Num_data;
+        end
+        % forward function of the layer
+        function [feat_map,feat_num1,feat_num2] = predict(layer,input_feats1,input_feats2)
+            % input: 
+            % layer: 
+            % in this case, it's the convolutional 3D layer created
+            % from the constructor function
+            % input_feats: 
+            % the feature maps being fed to the model
+            % output:
+            % feat_map: output feature maps
+            input_feats1=gpuArray(input_feats1);
+            input_feats2=gpuArray(input_feats2);
+            [row_feat,col_feat,feat_num1]=size(input_feats1);
+            [~,~,feat_num2]=size(input_feats2);
+            feat_map=zeros(row_feat,col_feat,(feat_num1+feat_num2));
+            stride=feat_num1/layer.num_data;
+            stride2=feat_num2/layer.num_data;
+            offset=stride+stride2;
+            % sliding the feature map one set by one set
+            i_feat2=1;
+            for i_feat=1:feat_num1
+                feat_map(:,:,i_feat+offset*(i_feat-1):i_feat+stride-1+offset*(i_feat-1))=input_feats1(:,:,i_feat);
+                feat_map(:,:,i_feat+stride+offset*(i_feat-1):stride+stride2+offset*(i_feat-1))=input_feats2(:,:,i_feat2);
+                i_feat2=i_feat2+1;
+            end
+            feat_map=gpuArray(feat_map);
+        end
+        % backward function of the layer
+        function [dLdY_1,dLdY_2] = backward(layer,loss_feat,feat_num1,feat_num2)
+            % input: 
+            % layer: 
+            % in this case, it's the convolutional 3D layer created
+            % from the constructor function
+            % input_feats: 
+            % the feature maps being fed to the model
+            % output:
+            % feat_map: output feature maps
+            loss_feat=gpuArray(loss_feat);
+            stride=ceil(feat_num1/feat_num2);
+            dY1=loss_feat;
+            dY1(:,:,1+stride:stride+1:end)=[];
+            dY2=loss_feat(:,:,1+stride:stride+1:end);
+            dLdY_1=dY1;
+            dLdY_2=dY2;
+        end
+     end
+ end
