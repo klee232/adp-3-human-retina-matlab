@@ -1,0 +1,22 @@
+function [p1, r1, DD, II, indicator] = comLoadDataA_p1(eid, did, p1suff)
+    % fpath = sprintf("/users/jlee123/data/procdata/adp-3-human-retina/A-segment/%s/%s-%s.mat", eid, did, p1suff);
+    fpath = sprintf("~/data/procdata/adp-3-human-retina/A-segment/%s/%s-%s.mat", eid, did, p1suff);
+    l = load(fpath, "p1", "r1", "II1", "DD1");
+    p1 = l.p1;
+    r1 = l.r1;
+    indicator=isfield(l,'II1');
+    if ~indicator
+        DD=0;
+        II=0;
+        return
+    end
+    II = l.II1;
+
+    indicator=isfield(l,'DD1');
+    if ~indicator
+        DD=0;
+        return
+    end
+
+    DD = l.DD1;
+end

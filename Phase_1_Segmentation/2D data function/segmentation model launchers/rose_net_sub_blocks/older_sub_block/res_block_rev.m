@@ -1,0 +1,106 @@
+
+
+function [dlnetwork_obj]=res_block_rev(dlnetwork, layer_ind,num_cardinal,num_feat)
+    
+    %% grab out dlnetwork object
+    dlnetwork_obj=dlnetwork;
+
+
+    %% setup first main layer (checked) (original conv1 in the bottleneck module)
+    main_layer=[
+        convolution2dLayer([1 1],num_feat,Padding="same",Name=strcat('main_layer_c1_',string(layer_ind)));
+        batchNormalizationLayer(Name=strcat('main_layer_b1_',string(layer_ind)));
+    ];
+    dlnetwork_obj=addLayers(dlnetwork_obj,main_layer);
+    
+
+    %% create resnest block spatial split attention part 
+    num_group=32;
+    for i_cardinal=1:num_cardinal
+        %% first branch of resnest block
+        res_block=[
+            groupedConvolution2dLayer([3 3],(num_feat)/num_group,Padding="same",Name=strcat('res_block_b1m1c1_',string(layer_ind),"_",string(i_cardinal),"_",string(i_block)));
+            batchNormalizationLayer(Name=strcat('res_block_b1m1b1_',string(layer_ind), "_", string(i_cardinal), "_", string(i_block)));
+            reluLayer(Name=strcat('res_block_b1m1a1_',string(layer_ind), "_",string(i_cardinal),"_", string(i_block)));
+            groupedConvolution2dLayer([3 3],(2*num_feat)/num_group,Padding="same",Name=strcat('res_block_first_branch_b1m1c2_',string(layer_ind), "_",string(i_cardinal),"_",string(i_block)));
+            batchNormalizationLayer(Name=strcat('res_block_b1m1b2_',string(layer_ind),"_",string(i_cardinal),"_",string(i_block)));
+            reluLayer(Name=strcat('res_block_b1m1a2_',string(layer_ind),"_",string(i_cardinal),"_",string(i_block)));
+            ];
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('main_layer_a1_',string(layer_ind)), strcat('res_block_b1m1a2_',string(layer_ind),"_",string(i_cardinal)));
+
+
+        %% split attention additional branch
+        res_block_split_atten_add_branch=[
+            res_block_input_addition_layer(strcat('res_block_split_atten_add_',string(layer_ind),"_",string(i_cardinal)));
+            res_block_global_average_pooling_layer(strcat("res_block_split_atten_avg_pool_",string(layer_ind),"_",string(i_cardinal)));
+            fullyConnectedLayer(num_feat/(2*num_cardinal),Name=strcat("res_block_split_atten_fc_",string(layer_ind),"_",string(i_cardinal)));
+            batchNormalizationLayer(Name=strcat("res_block_split_atten_b_",string(layer_ind),"_",string(i_cardinal)));
+            reluLayer(Name=strcat("res_block_split_atten_a_",string(layer_ind),"_",string(i_cardinal)));
+            ];
+
+        res_block_split_atten_add_branch_1=[
+            fullyConnectedLayer((num_feat/(1*num_cardinal)),Name=strcat("res_block_split_atten_branch_1_fc_",string(layer_ind),"_",string(i_cardinal)));
+            softmaxLayer(Name=strcat("res_block_split_atten_branch_1_softmax_",string(layer_ind),"_",string(i_cardinal)));
+            ];
+        res_block_split_atten_add_branch_2=[
+            fullyConnectedLayer((num_feat/(1*num_cardinal)),Name=strcat("res_block_split_atten_branch_2_fc_",string(layer_ind),"_",string(i_cardinal)));
+            softmaxLayer(Name=strcat("res_block_split_atten_branch_2_softmax_",string(layer_ind),"_",string(i_cardinal)));
+            ];
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block_split_atten_add_branch);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_first_branch_b1m1a2_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_split_atten_add_',string(layer_ind),"_",string(i_cardinal),'/in1'));
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_second_branch_b1m1a2_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_split_atten_add_',string(layer_ind),"_",string(i_cardinal),'/in2'));
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block_split_atten_add_branch_1);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat("res_block_split_atten_a_",string(layer_ind),"_",string(i_cardinal)), strcat('res_block_split_atten_branch_1_fc_',string(layer_ind),"_",string(i_cardinal)));
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block_split_atten_add_branch_2);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat("res_block_split_atten_a_",string(layer_ind),"_",string(i_cardinal)), strcat('res_block_split_atten_branch_2_fc_',string(layer_ind),"_",string(i_cardinal)));
+
+
+        %% split attention multiplication branch
+        res_block_split_atten_mult_branch_1=[
+            res_block_chn_multiplication_layer(2,strcat("res_block_branch_1_chn_multiplication_layer_",string(layer_ind),"_",string(i_cardinal)));
+            ];
+        res_block_split_atten_mult_branch_2=[
+            res_block_chn_multiplication_layer(2,strcat("res_block_branch_2_chn_multiplication_layer_",string(layer_ind),"_",string(i_cardinal)));
+            ];
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block_split_atten_mult_branch_1);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_split_atten_branch_1_softmax_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_branch_1_chn_multiplication_layer_',string(layer_ind),"_",string(i_cardinal),"/in2"));
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_first_branch_b1m1a2_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_branch_1_chn_multiplication_layer_',string(layer_ind),'_', string(i_cardinal),"/in1"));
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block_split_atten_mult_branch_2);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_split_atten_branch_2_softmax_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_branch_2_chn_multiplication_layer_',string(layer_ind),"_",string(i_cardinal),"/in2"));
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_second_branch_b1m1a2_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_branch_2_chn_multiplication_layer_',string(layer_ind),"_", string(i_cardinal),"/in1"));
+
+        % additional layer
+        res_block_split_atten_branch=[
+            additionLayer(2,Name=strcat('res_block_split_atten_branch_add_',string(layer_ind),"_",string(i_cardinal)));
+            ];
+        dlnetwork_obj=addLayers(dlnetwork_obj,res_block_split_atten_branch);
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_branch_1_chn_multiplication_layer_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_split_atten_branch_add_',string(layer_ind),"_",string(i_cardinal),'/in1'));
+        dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_branch_2_chn_multiplication_layer_',string(layer_ind),"_",string(i_cardinal)), strcat('res_block_split_atten_branch_add_',string(layer_ind),"_",string(i_cardinal),'/in2'));
+
+    end
+
+
+    %% concatenate the fianl part of res block
+    res_block_final_cat=[
+        concatenationLayer(3,num_cardinal,Name=strcat('res_block_final_cat_',string(layer_ind)));
+        convolution2dLayer([1 1],num_feat,Name=strcat('res_block_final_cat_c1_',string(layer_ind)));
+
+    ];
+    dlnetwork_obj=addLayers(dlnetwork_obj,res_block_final_cat);
+    for i_cardinal=1:num_cardinal     
+        dlnetwork_obj=connectLayers(dlnetwork_obj,strcat('res_block_split_atten_branch_add_',string(layer_ind),"_",string(i_cardinal)),strcat('res_block_final_cat_',string(layer_ind),'/in',string(i_cardinal)));
+    end
+
+
+    %% add the final part of res block
+    res_block_final_add=[
+        additionLayer(2,Name=strcat('res_block_final_add_',string(layer_ind)));
+        maxPooling2dLayer([2 2],Stride=[2 2],Name=strcat('res_block_final_max_',string(layer_ind)));
+    ];
+    dlnetwork_obj=addLayers(dlnetwork_obj,res_block_final_add);
+    dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('res_block_final_cat_c1_',string(layer_ind)), strcat('res_block_final_add_',string(layer_ind),'/in1'));
+    dlnetwork_obj=connectLayers(dlnetwork_obj, strcat('main_layer_a1_',string(layer_ind)), strcat('res_block_final_add_',string(layer_ind),'/in2'));
+
+
+end

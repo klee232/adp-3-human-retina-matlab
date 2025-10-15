@@ -1,0 +1,183 @@
+% Created by Kuan-Min Lee
+% Createed date: May 23rd, 2024
+
+% Brief User Introduction:
+% This function is built to create the binary groundtruth for the training
+% 3D OCTA image network. The below function contains two parts: image
+% denoising part and segmentation part
+
+% Input parameter:
+
+% Output:
+% octa_storage: storage for original OCTA image
+% octa_gt_storage: groundturth for OCTA image
+
+function [octa_storage,octa_gt_storage]=data_processor()
+    
+    disp("octa data extration running...");
+
+    
+    %% create directory for processed data (checked)
+    % the processed_data directory is for storing finalized data 
+    dataset_dir='~/data/klee232/processed_data';
+    file=dir(dataset_dir);
+    file=file(~ismember({file.name},{'.','..'}));
+    empty_ind=isempty(file);
+    % if the current directory doesn't contain directory for processed
+    % data, create one
+    if ~isfolder(dataset_dir) || empty_ind
+        mkdir (dataset_dir)        
+    end
+
+
+    %% Add Groundtruth generation folder (this conatins all the functions that are required while launching groundtruth creator) (checked)
+    addpath('Groundtruth generation/','end');
+
+
+    %% retrieve all file names for OCTA and OCT image file and get the number of files
+    OCTA_files=dir(fullfile('~/data/klee232/dataset','*-OCTA.mat'));
+    OCT_files=dir(fullfile('~/data/klee232/dataset','*-OCT.mat'));
+    num_files=length(OCTA_files);
+
+
+    %% create storage object for oct, octa images, and octa groundtruth
+    oct_storage=cell(num_files,1);
+    octa_storage=cell(num_files,1);
+    mask_storage=cell(num_files,1);
+
+
+    %% grab out image files
+    %% if the files have been processed before, just grab out the stored image object stored previously
+    if exist("~/data/klee232/processed_data/picture_obj",'dir') && length(dir("~/data/klee232/processed_data/picture_obj/*.mat"))>1
+        use_region_filter=false; % set the use of region filter to false
+        
+        % create storage for groundtruth and picture objects
+        octa_gt_storage=cell(num_files,1);
+        picture_obj_octa_storage=cell(num_files,1);
+        picture_obj_oct_storage=cell(num_files,1);
+
+        % retrieve all processed data
+        % retrieve all picture obj files
+        all_octa_obj_files=dir('~/data/klee232/processed_data/picture_obj/*-OCTA_obj.mat');
+        all_oct_obj_files=dir('~/data/klee232/processed_data/picture_obj/*-OCT_obj.mat');
+        num_obj_files=length(all_octa_obj_files);
+        folder_dir="~/data/klee232/processed_data/picture_obj/";
+
+        % loop through all picture obj files and store processed image data back into corresponding storage variable
+        for i_obj_file=1:num_obj_files
+            current_octa_obj_file=all_octa_obj_files(i_obj_file).name;
+            current_oct_obj_file=all_oct_obj_files(i_obj_file).name;
+            load(strcat(folder_dir,current_octa_obj_file));
+            load(strcat(folder_dir,current_oct_obj_file));
+
+            % retrieve octa information
+            octa_storage{i_obj_file}=mat2cell(picture_obj_octa.filtered_img,size(picture_obj_octa.filtered_img,1),...
+                size(picture_obj_octa.filtered_img,2),...
+                size(picture_obj_octa.filtered_img,3));
+
+            % retrieve oct information
+            oct_storage{i_obj_file}=mat2cell(picture_obj_oct.filtered_img,size(picture_obj_oct.filtered_img,1),...
+                size(picture_obj_oct.filtered_img,2),...
+                size(picture_obj_oct.filtered_img,3));
+
+            % retrieve mask information
+            mask_storage{i_obj_file}=mat2cell(picture_obj_octa.filtered_mask_seg,size(picture_obj_octa.filtered_mask_seg,1),...
+                size(picture_obj_octa.filtered_mask_seg,2),...
+                size(picture_obj_octa.filtered_mask_seg,3));
+
+            % retireve octa groundtruth information
+            octa_gt_storage{i_obj_file}=mat2cell(picture_obj_octa.binary_image_opt,size(picture_obj_octa.binary_image_opt,1),...
+                size(picture_obj_octa.binary_image_opt,2),...
+                size(picture_obj_octa.binary_image_opt,3));
+
+            % retrieve octa object
+            picture_obj_octa_storage{i_obj_file}=picture_obj_octa;
+            picture_obj_oct_storage{i_obj_file}=picture_obj_oct;
+        end
+
+    %% if there exists no processed data, grab out original image files and store them into array
+    else
+        use_region_filter=true;
+
+        % load all the file and stored them into storage variable
+        for i_file=1:num_files
+            % load the file
+            folder='~/data/klee232/dataset/';
+            OCTA_file_name=OCTA_files(i_file).name;
+            OCT_file_name=OCT_files(i_file).name;
+            load(strcat(folder,OCTA_file_name));
+            load(strcat(folder,OCT_file_name));
+            octa_storage{i_file}=mat2cell(DD1,size(DD1,1),size(DD1,2),size(DD1,3));
+            oct_storage{i_file}=mat2cell(II1,size(II1,1),size(II1,2),size(II1,3));
+            mask_storage{i_file}=mat2cell(r1.lyr,size(r1.lyr,1),size(r1.lyr,2),size(r1.lyr,3));
+        end
+    end
+        
+
+    %% conduct image groundtruth generation, and optimization for each file
+    % loop through each file
+    for i_file=1:num_files
+        % read each file in the processed director
+        current_octa_img=octa_storage{i_file};
+        current_oct_img=oct_storage{i_file};
+        current_mask_img=mask_storage{i_file};
+        current_octa_img=cell2mat(current_octa_img);
+        current_oct_img=cell2mat(current_oct_img);
+        current_mask_img=cell2mat(current_mask_img);
+        current_octa_img=squeeze(current_octa_img);
+        current_oct_img=squeeze(current_oct_img);
+        current_mask_img=squeeze(current_mask_img);
+
+        %% conduct image region filter (if not done yet)
+        % this will only executed if there is not any process conducted
+        % before.
+        if use_region_filter==true
+            [picture_obj_octa,picture_obj_oct,filtered_OCTA_img,filtered_seg_mask]=image_groundtruth_region_filter(current_octa_img,current_oct_img,current_mask_img);
+            
+            % store the filtered outcome back to storage variable
+            octa_storage{i_file}=mat2cell(filtered_current_octa_img,size(filtered_current_octa_img,1),size(filtered_current_octa_img,2),size(filtered_current_octa_img,3));
+            oct_storage{i_file}=mat2cell(filtered_current_oct_img,size(filtered_current_oct_img,1),size(filtered_current_oct_img,2),size(filtered_current_oct_img,3));
+            mask_storage{i_file}=mat2cell(filtered_current_seg_mask, size(filtered_current_seg_mask,1), size(filtered_current_seg_mask,2), size(filtered_current_seg_mask,3));
+        else
+            picture_obj_octa=picture_obj_octa_storage{i_file};
+            picture_obj_oct=picture_obj_oct_storage{i_file};
+            filtered_OCTA_img=current_octa_img;
+            filtered_seg_mask=current_mask_img;
+        end
+        
+        %% conduct segmentation octa and oct 
+        [filtered_current_octa_binary,picture_obj_octa]=image_groundtruth_generator_choroid_exclude_complete(picture_obj_octa,filtered_OCTA_img,filtered_seg_mask); 
+        
+        %% conduct segmentation optimization for octa and oct
+        % smoothness_weight=500;
+        % max_iterations=50;
+        % [filtered_current_octa_binary,picture_obj_octa]=image_groundtruth_optimizer_icm(filtered_OCTA_img, filtered_current_octa_binary, filtered_seg_mask,smoothness_weight, max_iterations,picture_obj_octa);
+        octa_gt_storage{i_file}=mat2cell(filtered_current_octa_binary,size(filtered_current_octa_binary,1),size(filtered_current_octa_binary,2),size(filtered_current_octa_binary,3));
+        
+        % if i_file==4
+        %     a=1;
+        % end
+
+        % save current picture object
+        if ~exist("~/data/klee232/processed_data/picture_obj","dir")
+            mkdir ~/data/klee232/processed_data/picture_obj
+        end
+        OCTA_file_name=OCTA_files(i_file).name;
+        OCT_file_name=OCT_files(i_file).name;
+        OCTA_file_name=erase(OCTA_file_name,".mat");
+        OCT_file_name=erase(OCT_file_name,".mat");
+        pict_obj_dir="~/data/klee232/processed_data/picture_obj/";
+        pict_obj_file_octa=strcat(OCTA_file_name,"_complete_obj.mat");
+        pict_obj_file_oct=strcat(OCT_file_name,"_complete_obj.mat");
+        pict_obj_file_octa_complete=strcat(pict_obj_dir,pict_obj_file_octa);
+        pict_obj_file_oct_complete=strcat(pict_obj_dir,pict_obj_file_oct);
+        save(pict_obj_file_octa_complete,"picture_obj_octa","-v7.3");
+        save(pict_obj_file_oct_complete,"picture_obj_oct");
+    end
+
+
+    % save the processed data inside the folder
+    save("~/data/klee232/processed_data/octa arrays/octa_data_complete_choroid_excluded_frangi.mat","octa_storage",'-v7.3');
+    save("~/data/klee232/processed_data/octa gt arrays/octa_gt_data_complete_choroid_excluded_frangi.mat","octa_gt_storage","-v7.3");
+
+end

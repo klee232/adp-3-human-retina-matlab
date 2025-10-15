@@ -1,0 +1,58 @@
+% Created by Kuan-Min Lee
+% Created date: Mar. 6th, 2024
+% All rights reserved to Leelab.ai
+
+% Brief User Introduction:
+% This function is built to compute the testing criteria: ROC curve and AUC
+% for the t
+
+% Input Parameter:
+% trained_coarse_network: the best trained coarse stage network from
+% previous phase
+% trained_fine_network: the best trained fine stage network from previous
+% phase
+% test_data: testing octa image
+% test_gt_data: testing groundtruth image
+% lyr: layer tested
+
+
+function testing_function_ROC(trained_coarse_network, trained_fine_network, test_data, test_gt_data, lyr)
+
+    %% retrieve the test data dimensional information
+    num_test_data=size(test_data,3);
+
+
+    %% compute prediction and grab out groundtruth
+    pred=[];
+    gt=[];
+
+    for i_test_data=1:num_test_data
+        test_img=test_data(:,:,i_test_data);
+        test_gt=test_gt_data(:,:,i_test_data);
+        test_img=dlarray(test_img,"SSCB");
+
+        % compute the outcome
+        coarse_test_out=forward(trained_coarse_network,test_img);
+        mid_img_feat=cat(3,test_img,coarse_test_out);
+        final_test_out=forward(trained_fine_network,mid_img_feat);
+
+        % store the prediction and groundtruth
+        pred=[pred;extractdata(final_test_out(:))];
+        gt=[gt;test_gt(:)];
+    end
+
+
+    %% compute AUC
+    [X,Y,~,AUC]=perfcurve(gt,pred,1);
+
+
+    %% plot ROC
+    figure;
+    plot(X,Y);
+    xlabel('False Positive Rate');
+    ylabel('True Positive Rate');
+    title(['ROC Curve for ' string(lyr) ' AUC:' num2str(AUC)]);
+    grid on;
+
+
+end

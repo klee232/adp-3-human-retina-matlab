@@ -1,0 +1,1029 @@
+% Created by Kuan-Min Lee
+% Created date: Jan. 29th, 2024
+% All rights reserved to Leelab.ai
+
+% Brief User Introduction:
+% I created tis customized convolutional layer class because I can't stand
+% with MATLAB's stupid training network function
+
+% Setup Parameter
+% kernel_size: size of the convolutional kernel (integer)
+% Input Parameter:
+% input_feats: input feature maps (multi-dimensional array)
+% Output Parameter
+% output_feats: output feature maps (multi-dimensional array)
+
+
+function [train_loss_storage,valid_loss_storage,trained_net]=model(num_iteration,train_data,train_gt,valid_data,valid_gt)
+    % grab out dimensional information
+    [~,~,num_train_data]=size(train_data);
+    [~,~,num_valid_data]=size(valid_data);
+
+    % grab out necessary layers
+    % block 1
+    % module layer 1: 3*3 convolutional layer + batchnromalization + relu 
+    name="b1m1_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb1m1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b1m1_batchnorm_layer_b";
+    layerb1m1b = Batchnormalization_layer(name,1);
+    name="b1m1_Relu_layer_a";
+    layerb1m1a = ReLu_layer(name);
+    % module layer 2: 3*3 convolutional layer + batchnromalization + relu
+    name="b1m2_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb1m2 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b1m2_batchnorm_layer_b";
+    layerb1m2b = Batchnormalization_layer(name,1);
+    name="b1m2_Relu_layer_a";
+    layerb1m2a = ReLu_layer(name);
+    % module layer 3: 3*3 convolutional layer + batchnromalization + relu
+    name="b1m3_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb1m3 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b1m3_batchnorm_layer_b";
+    layerb1m3b = Batchnormalization_layer(name,1);
+    name="b1m3_Relu_layer_a";
+    layerb1m3a = ReLu_layer(name);
+    % Residual module layer 1: Residual layer
+    name="rml1_Residual_layer";
+    layerrm1=Residual_layer(name);
+    name="rml1_batchnorm_layer_b";
+    layerrm1b = Batchnormalization_layer(name,1);
+    name="rml1_Relu_layer_a";
+    layerrm1a = ReLu_layer(name);
+
+    % block 2
+    % module layer 1: 3*3 convolutional layer + batchnromalization + relu
+    name="b2m1_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb2m1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b2m1_batchnorm_layer_b";
+    layerb2m1b = Batchnormalization_layer(name,1);
+    name="b2m1_Relu_layer_a";
+    layerb2m1a = ReLu_layer(name);
+    % module layer 2: 3*3 convolutional layer + batchnromalization + relu
+    name="b2m2_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb2m2 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b2m2_batchnorm_layer_b";
+    layerb2m2b = Batchnormalization_layer(name,1);
+    name="b2m2_Relu_layer_a";
+    layerb2m2a = ReLu_layer(name);
+    % module layer 3: 3*3 convolutional layer + batchnromalization + relu
+    name="b2m3_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb2m3 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b2m3_batchnorm_layer_b";
+    layerb2m3b = Batchnormalization_layer(name,1);
+    name="b2m3_Relu_layer_a";
+    layerb2m3a = ReLu_layer(name);
+    % Residual module layer 2: Residual layer
+    name="rml2_Residual_layer";
+    layerrm2=Residual_layer(name);
+    name="rml2_batchnorm_layer_b";
+    layerrm2b = Batchnormalization_layer(name,1);
+    name="rml2_Relu_layer_a";
+    layerrm2a = ReLu_layer(name);
+
+    % block 3
+    % module layer 1: 3*3 convolutional layer + batchnromalization + relu
+    name="b3m1_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb3m1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b3m1_batchnorm_layer_b";
+    layerb3m1b = Batchnormalization_layer(name,1);
+    name="b3m1_Relu_layer_a";
+    layerb3m1a = ReLu_layer(name);
+    % module layer 2: 3*3 convolutional layer + batchnromalization + relu
+    name="b3m2_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb3m2 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b3m2_batchnorm_layer_b";
+    layerb3m2b = Batchnormalization_layer(name,1);
+    name="b3m2_Relu_layer_a";
+    layerb3m2a = ReLu_layer(name);
+    % module layer 3: 3*3 convolutional layer + batchnromalization + relu
+    name="b3m3_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb3m3 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b3m3_batchnorm_layer_b";
+    layerb3m3b = Batchnormalization_layer(name,1);
+    name="b3m3_Relu_layer_a";
+    layerb3m3a = ReLu_layer(name);
+    % Residual module layer 3: Residual layer
+    name="rml3_Residual_layer";
+    layerrm3=Residual_layer(name);
+    name="rml3_batchnorm_layer_b";
+    layerrm3b = Batchnormalization_layer(name,1);
+    name="rml3_Relu_layer_a";
+    layerrm3a = ReLu_layer(name);
+
+    % block 4 Decoder 
+    % module layer 1: 3*3 convolutional layer + batchnromalization + relu
+    name="b4m1_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb4m1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b4m1_batchnorm_layer_b";
+    layerb4m1b = Batchnormalization_layer(name,1);
+    name="b4m1_Relu_layer_a";
+    layerb4m1a = ReLu_layer(name);
+    % module layer 2: 3*3 convolutional layer + batchnromalization + relu
+    name="b4m2_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb4m2 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b4m2_batchnorm_layer_b";
+    layerb4m2b = Batchnormalization_layer(name,1);
+    name="b4m2_Relu_layer_a";
+    layerb4m2a = ReLu_layer(name);
+    % module layer 3: 3*3 convolutional layer + batchnromalization + relu
+    name="b4m3_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb4m3 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b4m3_batchnorm_layer_b";
+    layerb4m3b = Batchnormalization_layer(name,1);
+    name="b4m3_Relu_layer_a";
+    layerb4m3a = ReLu_layer(name);
+    % Residual module layer 4: Residual layer
+    name="rml4_Residual_layer";
+    layerrm4=Residual_layer(name);
+    name="rml4_batchnorm_layer_b";
+    layerrm4b = Batchnormalization_layer(name,1);
+    name="rml4_Relu_layer_a";
+    layerrm4a = ReLu_layer(name);
+
+    % Concatenate layer
+    name="concat_l_1";
+    concate_dim=3;
+    num_data=num_train_data;
+    layer_c1 = Concatenate_layer(name,concate_dim,num_data);
+    num_data=num_valid_data;
+    layer_c1_v = Concatenate_layer(name,concate_dim,num_data);
+
+    % block 5 Decoder 
+    % module layer 1: 3*3 convolutional layer + batchnromalization + relu
+    name="b5m1_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=2;
+    layerb5m1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b5m1_batchnorm_layer_b";
+    layerb5m1b = Batchnormalization_layer(name,1);
+    name="b5m1_Relu_layer_a";
+    layerb5m1a = ReLu_layer(name);
+    % module layer 2: 3*3 convolutional layer + batchnromalization + relu
+    name="b5m2_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb5m2 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b5m2_batchnorm_layer_b";
+    layerb5m2b = Batchnormalization_layer(name,1);
+    name="b5m2_Relu_layer_a";
+    layerb5m2a = ReLu_layer(name);
+    % module layer 3: 3*3 convolutional layer + batchnromalization + relu
+    name="b5m3_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb5m3 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b5m3_batchnorm_layer_b";
+    layerb5m3b = Batchnormalization_layer(name,1);
+    name="b5m3_Relu_layer_a";
+    layerb5m3a = ReLu_layer(name);
+    % Residual module layer 5: Residual layer
+    name="rml5_Residual_layer";
+    layerrm5=Residual_layer(name);
+    name="rml5_batchnorm_layer_b";
+    layerrm5b = Batchnormalization_layer(name,1);
+    name="rml5_Relu_layer_a";
+    layerrm5a = ReLu_layer(name);
+
+    % Concatenate layer
+    name="concat_l_2";
+    concate_dim=3;
+    num_data=num_train_data;
+    layer_c2 = Concatenate_layer(name,concate_dim,num_data);
+    num_data=num_valid_data;
+    layer_c2_v = Concatenate_layer(name,concate_dim,num_data);
+
+    % block 6 Decoder 
+    % module layer 1: 3*3 convolutional layer + batchnromalization + relu
+    name="b6m1_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=2;
+    layerb6m1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b6m1_batchnorm_layer_b";
+    layerb6m1b = Batchnormalization_layer(name,1);
+    name="b6m1_Relu_layer_a";
+    layerb6m1a = ReLu_layer(name);
+    % module layer 2: 3*3 convolutional layer + batchnromalization + relu
+    name="b6m2_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb6m2 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b6m2_batchnorm_layer_b";
+    layerb6m2b = Batchnormalization_layer(name,1);
+    name="b6m2_Relu_layer_a";
+    layerb6m2a = ReLu_layer(name);
+    % module layer 3: 3*3 convolutional layer + batchnromalization + relu
+    name="b6m3_conv_layer";
+    num_filter=1;
+    kernel_size=3;
+    input_chn=1;
+    layerb6m3 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="b6m3_batchnorm_layer_b";
+    layerb6m3b = Batchnormalization_layer(name,1);
+    name="b6m3_Relu_layer_a";
+    layerb6m3a = ReLu_layer(name);
+    % Residual module layer 6: Residual layer
+    name="rml6_Residual_layer";
+    layerrm6=Residual_layer(name);
+    name="rml6_batchnorm_layer_b";
+    layerrm6b = Batchnormalization_layer(name,1);
+    name="rml6_Relu_layer_a";
+    layerrm6a = ReLu_layer(name);
+
+    % block 7 flatten layer
+    name="f1_conv_layer";
+    num_filter=1;
+    kernel_size=1;
+    input_chn=1;
+    layerf1 = Convolutional_2D_layer(name,num_filter,kernel_size,input_chn,"same");
+    name="f1_batchnorm_layer_b";
+    layerf1b = Batchnormalization_layer(name,1);
+    name="f1_Relu_layer_a";
+    layerf1a = Sigmoid_layer(name);
+
+    % block 8 loss function
+    name="SoftDice";
+    layer_l=SoftDice_ClassificationLayer(name);
+
+    % create storage variable for storing training and validation loss
+    train_loss_storage=zeros(num_iteration,1);
+    valid_loss_storage=zeros(num_iteration,1);
+
+    % block 1
+    % module 1
+    momentum_W_b1m1_1=0; momentum_W_b1m1_2=0;
+    momentum_B_b1m1_1=0; momentum_B_b1m1_2=0;
+    momentum_b_b1m1_1=0; momentum_b_b1m1_2=0;
+    momentum_r_b1m1_1=0; momentum_r_b1m1_2=0;
+    % module 2
+    momentum_W_b1m2_1=0; momentum_W_b1m2_2=0;
+    momentum_B_b1m2_1=0; momentum_B_b1m2_2=0;
+    momentum_b_b1m2_1=0; momentum_b_b1m2_2=0;
+    momentum_r_b1m2_1=0; momentum_r_b1m2_2=0;
+    % module 3
+    momentum_W_b1m3_1=0; momentum_W_b1m3_2=0;
+    momentum_B_b1m3_1=0; momentum_B_b1m3_2=0;
+    momentum_b_b1m3_1=0; momentum_b_b1m3_2=0;
+    momentum_r_b1m3_1=0; momentum_r_b1m3_2=0;
+    % residual layer 2
+    momentum_b_r1b_1=0; momentum_b_r1b_2=0;
+    momentum_r_r1b_1=0; momentum_r_r1b_2=0;
+    % block 2
+    % module 1
+    momentum_W_b2m1_1=0; momentum_W_b2m1_2=0;
+    momentum_B_b2m1_1=0; momentum_B_b2m1_2=0;
+    momentum_b_b2m1_1=0; momentum_b_b2m1_2=0;
+    momentum_r_b2m1_1=0; momentum_r_b2m1_2=0;
+    % module 2
+    momentum_W_b2m2_1=0; momentum_W_b2m2_2=0;
+    momentum_B_b2m2_1=0; momentum_B_b2m2_2=0;
+    momentum_b_b2m2_1=0; momentum_b_b2m2_2=0;
+    momentum_r_b2m2_1=0; momentum_r_b2m2_2=0;
+    % module 3
+    momentum_W_b2m3_1=0; momentum_W_b2m3_2=0;
+    momentum_B_b2m3_1=0; momentum_B_b2m3_2=0;
+    momentum_b_b2m3_1=0; momentum_b_b2m3_2=0;
+    momentum_r_b2m3_1=0; momentum_r_b2m3_2=0;
+    % residual layer 2
+    momentum_b_r2b_1=0; momentum_b_r2b_2=0;
+    momentum_r_r2b_1=0; momentum_r_r2b_2=0;
+    % block 3
+    % module 1
+    momentum_W_b3m1_1=0; momentum_W_b3m1_2=0;
+    momentum_B_b3m1_1=0; momentum_B_b3m1_2=0;
+    momentum_b_b3m1_1=0; momentum_b_b3m1_2=0;
+    momentum_r_b3m1_1=0; momentum_r_b3m1_2=0;
+    % module 2
+    momentum_W_b3m2_1=0; momentum_W_b3m2_2=0;
+    momentum_B_b3m2_1=0; momentum_B_b3m2_2=0;
+    momentum_b_b3m2_1=0; momentum_b_b3m2_2=0;
+    momentum_r_b3m2_1=0; momentum_r_b3m2_2=0;
+    % module 3
+    momentum_W_b3m3_1=0; momentum_W_b3m3_2=0;
+    momentum_B_b3m3_1=0; momentum_B_b3m3_2=0;
+    momentum_b_b3m3_1=0; momentum_b_b3m3_2=0;
+    momentum_r_b3m3_1=0; momentum_r_b3m3_2=0;
+    % residual layer 3
+    momentum_b_r3b_1=0; momentum_b_r3b_2=0;
+    momentum_r_r3b_1=0; momentum_r_r3b_2=0;
+    % block 4
+    % module 1
+    momentum_W_b4m1_1=0; momentum_W_b4m1_2=0;
+    momentum_B_b4m1_1=0; momentum_B_b4m1_2=0;
+    momentum_b_b4m1_1=0; momentum_b_b4m1_2=0;
+    momentum_r_b4m1_1=0; momentum_r_b4m1_2=0;
+    % module 2
+    momentum_W_b4m2_1=0; momentum_W_b4m2_2=0;
+    momentum_B_b4m2_1=0; momentum_B_b4m2_2=0;
+    momentum_b_b4m2_1=0; momentum_b_b4m2_2=0;
+    momentum_r_b4m2_1=0; momentum_r_b4m2_2=0;
+    % module 3
+    momentum_W_b4m3_1=0; momentum_W_b4m3_2=0;
+    momentum_B_b4m3_1=0; momentum_B_b4m3_2=0;
+    momentum_b_b4m3_1=0; momentum_b_b4m3_2=0;
+    momentum_r_b4m3_1=0; momentum_r_b4m3_2=0;
+    % residual layer 4
+    momentum_b_r4b_1=0; momentum_b_r4b_2=0;
+    momentum_r_r4b_1=0; momentum_r_r4b_2=0;
+    % block 5
+    % module 1
+    momentum_W_b5m1_1=0; momentum_W_b5m1_2=0;
+    momentum_B_b5m1_1=0; momentum_B_b5m1_2=0;
+    momentum_b_b5m1_1=0; momentum_b_b5m1_2=0;
+    momentum_r_b5m1_1=0; momentum_r_b5m1_2=0;
+    % module 2
+    momentum_W_b5m2_1=0; momentum_W_b5m2_2=0;
+    momentum_B_b5m2_1=0; momentum_B_b5m2_2=0;
+    momentum_b_b5m2_1=0; momentum_b_b5m2_2=0;
+    momentum_r_b5m2_1=0; momentum_r_b5m2_2=0;
+    % module 3
+    momentum_W_b5m3_1=0; momentum_W_b5m3_2=0;
+    momentum_B_b5m3_1=0; momentum_B_b5m3_2=0;
+    momentum_b_b5m3_1=0; momentum_b_b5m3_2=0;
+    momentum_r_b5m3_1=0; momentum_r_b5m3_2=0;
+    % residual layer 5
+    momentum_b_r5b_1=0; momentum_b_r5b_2=0;
+    momentum_r_r5b_1=0; momentum_r_r5b_2=0;
+    % block 6
+    % module 1
+    momentum_W_b6m1_1=0; momentum_W_b6m1_2=0;
+    momentum_B_b6m1_1=0; momentum_B_b6m1_2=0;
+    momentum_b_b6m1_1=0; momentum_b_b6m1_2=0;
+    momentum_r_b6m1_1=0; momentum_r_b6m1_2=0;
+    % module 2
+    momentum_W_b6m2_1=0; momentum_W_b6m2_2=0;
+    momentum_B_b6m2_1=0; momentum_B_b6m2_2=0;
+    momentum_b_b6m2_1=0; momentum_b_b6m2_2=0;
+    momentum_r_b6m2_1=0; momentum_r_b6m2_2=0;
+    % module 3
+    momentum_W_b6m3_1=0; momentum_W_b6m3_2=0;
+    momentum_B_b6m3_1=0; momentum_B_b6m3_2=0;
+    momentum_b_b6m3_1=0; momentum_b_b6m3_2=0;
+    momentum_r_b6m3_1=0; momentum_r_b6m3_2=0;
+    % residual layer 6
+    momentum_b_r6b_1=0; momentum_b_r6b_2=0;
+    momentum_r_r6b_1=0; momentum_r_r6b_2=0;
+    % flatten layer
+    % batchnormalization layer
+    momentum_b_f1b_1=0; momentum_b_f1b_2=0;
+    momentum_r_f1b_1=0; momentum_r_f1b_2=0;
+    % convolution layer
+    momentum_W_f1_1=0; momentum_W_f1_2=0;
+    momentum_B_f1_1=0; momentum_B_f1_2=0;
+
+    tic
+    % conduct training for the model
+    % update current parameters
+    for i_iter=1:num_iteration
+        % forward part
+        % training data part
+        % Block 1
+        forward_b1m1=predict(layerb1m1,train_data); % 3*3*16 convolutional layer
+        forward_b1m1b=predict(layerb1m1b,forward_b1m1); % batchnormalization
+        forward_b1m1a=predict(layerb1m1a,forward_b1m1b); % ReLu layer
+        forward_b1m2=predict(layerb1m2,forward_b1m1a); % 3*3 convolutional layer
+        forward_b1m2b=predict(layerb1m2b,forward_b1m2); % batchnormalization
+        forward_b1m2a=predict(layerb1m2a,forward_b1m2b); % ReLu layer
+        forward_b1m3=predict(layerb1m3,forward_b1m2a); % 3*3 convolutional layer
+        forward_b1m3b=predict(layerb1m3b,forward_b1m3); % batchnormalization
+        forward_b1m3a=predict(layerb1m3a,forward_b1m3b); % ReLu layer
+        forward_r1=predict(layerrm1,forward_b1m3a,forward_b1m1a); % residual layer
+        forward_r1b=predict(layerrm1b,forward_r1); % batchnormalization
+        forward_r1a=predict(layerrm1a,forward_r1b); % ReLu layer
+        % Block 2
+        forward_b2m1=predict(layerb2m1,forward_r1a); % 3*3*2 convolutional layer
+        forward_b2m1b=predict(layerb2m1b,forward_b2m1); % batchnormalization
+        forward_b2m1a=predict(layerb2m1a,forward_b2m1b); % ReLu layer
+        forward_b2m2=predict(layerb2m2,forward_b2m1a); % 3*3 convolutional layer
+        forward_b2m2b=predict(layerb2m2b,forward_b2m2); % batchnormalization
+        forward_b2m2a=predict(layerb2m2a,forward_b2m2b); % ReLu layer
+        forward_b2m3=predict(layerb2m3,forward_b2m2a); % 3*3 convolutional layer
+        forward_b2m3b=predict(layerb2m3b,forward_b2m3); % batchnormalization
+        forward_b2m3a=predict(layerb2m3a,forward_b2m3b); % ReLu layer
+        forward_r2=predict(layerrm2,forward_b2m3a,forward_b2m1a); % residual layer
+        forward_r2b=predict(layerrm2b,forward_r2); % batchnormalization
+        forward_r2a=predict(layerrm2a,forward_r2b); % ReLu layer
+        % Block 3
+        forward_b3m1=predict(layerb3m1,forward_r2a); % 3*3*2 convolutional layer
+        forward_b3m1b=predict(layerb3m1b,forward_b3m1); % batchnormalization
+        forward_b3m1a=predict(layerb3m1a,forward_b3m1b); % ReLu layer
+        forward_b3m2=predict(layerb3m2,forward_b3m1a); % 3*3 convolutional layer
+        forward_b3m2b=predict(layerb3m2b,forward_b3m2); % batchnormalization
+        forward_b3m2a=predict(layerb3m2a,forward_b3m2b); % ReLu layer
+        forward_b3m3=predict(layerb3m3,forward_b3m2a); % 3*3 convolutional layer
+        forward_b3m3b=predict(layerb3m3b,forward_b3m3); % batchnormalization
+        forward_b3m3a=predict(layerb3m3a,forward_b3m3b); % ReLu layer
+        forward_r3=predict(layerrm3,forward_b3m3a,forward_b3m1a); % residual layer
+        forward_r3b=predict(layerrm3b,forward_r3); % batchnormalization
+        forward_r3a=predict(layerrm3a,forward_r3b); % ReLu layer
+        % Block 4
+        forward_b4m1=predict(layerb4m1,forward_r3a); % 3*3*2 convolutional layer
+        forward_b4m1b=predict(layerb4m1b,forward_b4m1); % batchnormalization
+        forward_b4m1a=predict(layerb4m1a,forward_b4m1b); % ReLu layer
+        forward_b4m2=predict(layerb4m2,forward_b4m1a); % 3*3 convolutional layer
+        forward_b4m2b=predict(layerb4m2b,forward_b4m2); % batchnormalization
+        forward_b4m2a=predict(layerb4m2a,forward_b4m2b); % ReLu layer
+        forward_b4m3=predict(layerb4m3,forward_b4m2a); % 3*3 convolutional layer
+        forward_b4m3b=predict(layerb4m3b,forward_b4m3); % batchnormalization
+        forward_b4m3a=predict(layerb4m3a,forward_b4m3b); % ReLu layer
+        forward_r4=predict(layerrm4,forward_b4m3a,forward_b4m1a); % residual layer
+        forward_r4b=predict(layerrm4b,forward_r4); % batchnormalization
+        forward_r4a=predict(layerrm4a,forward_r4b); % ReLu layer
+        forward_c1=predict(layer_c1,forward_r4a,forward_r2a); % concatenate
+        % Block 5
+        forward_b5m1=predict(layerb5m1,forward_c1); % 3*3*16 convolutional layer
+        forward_b5m1b=predict(layerb5m1b,forward_b5m1); % batchnormalization
+        forward_b5m1a=predict(layerb5m1a,forward_b5m1b); % ReLu layer
+        forward_b5m2=predict(layerb5m2,forward_b5m1a); % 3*3 convolutional layer
+        forward_b5m2b=predict(layerb5m2b,forward_b5m2); % batchnormalization
+        forward_b5m2a=predict(layerb5m2a,forward_b5m2b); % ReLu layer
+        forward_b5m3=predict(layerb5m3,forward_b5m2a); % 3*3 convolutional layer
+        forward_b5m3b=predict(layerb5m3b,forward_b5m3); % batchnormalization
+        forward_b5m3a=predict(layerb5m3a,forward_b5m3b); % ReLu layer
+        forward_r5=predict(layerrm5,forward_b5m3a,forward_b5m1a); % residual layer
+        forward_r5b=predict(layerrm5b,forward_r5); % batchnormalization
+        forward_r5a=predict(layerrm5a,forward_r5b); % ReLu layer
+        forward_c2=predict(layer_c2,forward_r5a,forward_r1a); % concatenate
+        % Block 6
+        forward_b6m1=predict(layerb6m1,forward_c2); % 3*3*16 convolutional layer
+        forward_b6m1b=predict(layerb6m1b,forward_b6m1); % batchnormalization
+        forward_b6m1a=predict(layerb6m1a,forward_b6m1b); % ReLu layer
+        forward_b6m2=predict(layerb6m2,forward_b6m1a); % 3*3 convolutional layer
+        forward_b6m2b=predict(layerb6m2b,forward_b6m2); % batchnormalization
+        forward_b6m2a=predict(layerb6m2a,forward_b6m2b); % ReLu layer
+        forward_b6m3=predict(layerb6m3,forward_b6m2a); % 3*3 convolutional layer
+        forward_b6m3b=predict(layerb6m3b,forward_b6m3); % batchnormalization
+        forward_b6m3a=predict(layerb6m3a,forward_b6m3b); % ReLu layer
+        forward_r6=predict(layerrm6,forward_b6m3a,forward_b6m1a); % residual layer
+        forward_r6b=predict(layerrm6b,forward_r6); % batchnormalization
+        forward_r6a=predict(layerrm6a,forward_r6b); % ReLu layer
+        % flatten layer
+        forward_f1=predict(layerf1,forward_r6a); % 3*3*16 convolutional layer
+        forward_f1b=predict(layerf1b,forward_f1); % 3*3*16 convolutional layer
+        forward_f1a=predict(layerf1a,forward_f1b); % 3*3*16 convolutional layer
+        % loss function layer
+        loss=forwardLoss(layer_l,forward_f1a,train_gt);  
+        % display the current training loss
+        message=strcat("Current iteration ", string(i_iter), " out of ", string(num_iteration)," : ", string(loss));
+        disp(message);
+        % store current loss value for plotting the loss plot
+        train_loss_storage(i_iter,1)=loss;
+
+        % validation data part
+        % Block 1
+        forward_b1m1_v=predict(layerb1m1,valid_data); % 3*3*16 convolutional layer
+        forward_b1m1b_v=predict(layerb1m1b,forward_b1m1_v); % batchnormalization
+        forward_b1m1a_v=predict(layerb1m1a,forward_b1m1b_v); % ReLu layer
+        forward_b1m2_v=predict(layerb1m2,forward_b1m1a_v); % 3*3 convolutional layer
+        forward_b1m2b_v=predict(layerb1m2b,forward_b1m2_v); % batchnormalization
+        forward_b1m2a_v=predict(layerb1m2a,forward_b1m2b_v); % ReLu layer
+        forward_b1m3_v=predict(layerb1m3,forward_b1m2a_v); % 3*3 convolutional layer
+        forward_b1m3b_v=predict(layerb1m3b,forward_b1m3_v); % batchnormalization
+        forward_b1m3a_v=predict(layerb1m3a,forward_b1m3b_v); % ReLu layer
+        forward_r1_v=predict(layerrm1,forward_b1m3a_v,forward_b1m1a_v); % residual layer
+        forward_r1b_v=predict(layerrm1b,forward_r1_v); % batchnormalization
+        forward_r1a_v=predict(layerrm1a,forward_r1b_v); % ReLu layer
+        % Block 2
+        forward_b2m1_v=predict(layerb2m1,forward_r1a_v); % 3*3*2 convolutional layer
+        forward_b2m1b_v=predict(layerb2m1b,forward_b2m1_v); % batchnormalization
+        forward_b2m1a_v=predict(layerb2m1a,forward_b2m1b_v); % ReLu layer
+        forward_b2m2_v=predict(layerb2m2,forward_b2m1a_v); % 3*3 convolutional layer
+        forward_b2m2b_v=predict(layerb2m2b,forward_b2m2_v); % batchnormalization
+        forward_b2m2a_v=predict(layerb2m2a,forward_b2m2b_v); % ReLu layer
+        forward_b2m3_v=predict(layerb2m3,forward_b2m2a_v); % 3*3 convolutional layer
+        forward_b2m3b_v=predict(layerb2m3b,forward_b2m3_v); % batchnormalization
+        forward_b2m3a_v=predict(layerb2m3a,forward_b2m3b_v); % ReLu layer
+        forward_r2_v=predict(layerrm2,forward_b2m3a_v,forward_b2m1a_v); % residual layer
+        forward_r2b_v=predict(layerrm2b,forward_r2_v); % batchnormalization
+        forward_r2a_v=predict(layerrm2a,forward_r2b_v); % ReLu layer
+        % Block 3
+        forward_b3m1_v=predict(layerb3m1,forward_r2a_v); % 3*3*2 convolutional layer
+        forward_b3m1b_v=predict(layerb3m1b,forward_b3m1_v); % batchnormalization
+        forward_b3m1a_v=predict(layerb3m1a,forward_b3m1b_v); % ReLu layer
+        forward_b3m2_v=predict(layerb3m2,forward_b3m1a_v); % 3*3 convolutional layer
+        forward_b3m2b_v=predict(layerb3m2b,forward_b3m2_v); % batchnormalization
+        forward_b3m2a_v=predict(layerb3m2a,forward_b3m2b_v); % ReLu layer
+        forward_b3m3_v=predict(layerb3m3,forward_b3m2a_v); % 3*3 convolutional layer
+        forward_b3m3b_v=predict(layerb3m3b,forward_b3m3_v); % batchnormalization
+        forward_b3m3a_v=predict(layerb3m3a,forward_b3m3b_v); % ReLu layer
+        forward_r3_v=predict(layerrm3,forward_b3m3a_v,forward_b3m1a_v); % residual layer
+        forward_r3b_v=predict(layerrm3b,forward_r3_v); % batchnormalization
+        forward_r3a_v=predict(layerrm3a,forward_r3b_v); % ReLu layer
+        % Block 4
+        forward_b4m1_v=predict(layerb4m1,forward_r3a_v); % 3*3*2 convolutional layer
+        forward_b4m1b_v=predict(layerb4m1b,forward_b4m1_v); % batchnormalization
+        forward_b4m1a_v=predict(layerb4m1a,forward_b4m1b_v); % ReLu layer
+        forward_b4m2_v=predict(layerb4m2,forward_b4m1a_v); % 3*3 convolutional layer
+        forward_b4m2b_v=predict(layerb4m2b,forward_b4m2_v); % batchnormalization
+        forward_b4m2a_v=predict(layerb4m2a,forward_b4m2b_v); % ReLu layer
+        forward_b4m3_v=predict(layerb4m3,forward_b4m2a_v); % 3*3 convolutional layer
+        forward_b4m3b_v=predict(layerb4m3b,forward_b4m3_v); % batchnormalization
+        forward_b4m3a_v=predict(layerb4m3a,forward_b4m3b_v); % ReLu layer
+        forward_r4_v=predict(layerrm4,forward_b4m3a_v,forward_b4m1a_v); % residual layer
+        forward_r4b_v=predict(layerrm4b,forward_r4_v); % batchnormalization
+        forward_r4a_v=predict(layerrm4a,forward_r4b_v); % ReLu layer
+        forward_c1_v=predict(layer_c1_v,forward_r4a_v,forward_r2a_v); % concatenate
+        % Block 5
+        forward_b5m1_v=predict(layerb5m1,forward_c1_v); % 3*3*16 convolutional layer
+        forward_b5m1b_v=predict(layerb5m1b,forward_b5m1_v); % batchnormalization
+        forward_b5m1a_v=predict(layerb5m1a,forward_b5m1b_v); % ReLu layer
+        forward_b5m2_v=predict(layerb5m2,forward_b5m1a_v); % 3*3 convolutional layer
+        forward_b5m2b_v=predict(layerb5m2b,forward_b5m2_v); % batchnormalization
+        forward_b5m2a_v=predict(layerb5m2a,forward_b5m2b_v); % ReLu layer
+        forward_b5m3_v=predict(layerb5m3,forward_b5m2a_v); % 3*3 convolutional layer
+        forward_b5m3b_v=predict(layerb5m3b,forward_b5m3_v); % batchnormalization
+        forward_b5m3a_v=predict(layerb5m3a,forward_b5m3b_v); % ReLu layer
+        forward_r5_v=predict(layerrm5,forward_b5m3a_v,forward_b5m1a_v); % residual layer
+        forward_r5b_v=predict(layerrm5b,forward_r5_v); % batchnormalization
+        forward_r5a_v=predict(layerrm5a,forward_r5b_v); % ReLu layer
+        forward_c2_v=predict(layer_c2_v,forward_r5a_v,forward_r1a_v); % concatenate
+        % Block 6
+        forward_b6m1_v=predict(layerb6m1,forward_c2_v); % 3*3*16 convolutional layer
+        forward_b6m1b_v=predict(layerb6m1b,forward_b6m1_v); % batchnormalization
+        forward_b6m1a_v=predict(layerb6m1a,forward_b6m1b_v); % ReLu layer
+        forward_b6m2_v=predict(layerb6m2,forward_b6m1a_v); % 3*3 convolutional layer
+        forward_b6m2b_v=predict(layerb6m2b,forward_b6m2_v); % batchnormalization
+        forward_b6m2a_v=predict(layerb6m2a,forward_b6m2b_v); % ReLu layer
+        forward_b6m3_v=predict(layerb6m3,forward_b6m2a_v); % 3*3 convolutional layer
+        forward_b6m3b_v=predict(layerb6m3b,forward_b6m3_v); % batchnormalization
+        forward_b6m3a_v=predict(layerb6m3a,forward_b6m3b_v); % ReLu layer
+        forward_r6_v=predict(layerrm6,forward_b6m3a_v,forward_b6m1a_v); % residual layer
+        forward_r6b_v=predict(layerrm6b,forward_r6_v); % batchnormalization
+        forward_r6a_v=predict(layerrm6a,forward_r6b_v); % ReLu layer
+        % flatten layer
+        forward_f1_v=predict(layerf1,forward_r6a_v); % 3*3*16 convolutional layer
+        forward_f1b_v=predict(layerf1b,forward_f1_v); % 3*3*16 convolutional layer
+        forward_f1a_v=predict(layerf1a,forward_f1b_v); % 3*3*16 convolutional layer
+        % loss function layer
+        loss_v=forwardLoss(layer_l,forward_f1a_v,valid_gt);  
+        % display the current training loss
+        message=strcat("Current iteration (Validation) ", string(i_iter), " out of ", string(num_iteration)," : ", string(forward8_v));
+        disp(message);
+        % store current loss value for plotting the loss plot
+        valid_loss_storage(i_iter,1)=loss_v;
+
+        % backward part
+        % loss function layer
+        dLdY_l=backwardLoss(layer_l,forward_f1a,train_gt); % soft dice loss function
+        % flatten layer
+        dLdY_f1a=backward(layerf1a,forward_f1b,dLdY_l); % Sigmoid layer
+        [dLdY_f1b,dLdr_f1b,dLdb_f1b]=backward(layerf1b,forward_f1,dLdY_f1a); % batchnormalization
+        [dLdY_f1,dLdW_f1,dLdb_f1]=backward(layerf1,forward_r6,dLdY_f1b); % 3*3*16 convolutional layer
+        % block 6
+        [dLdY_r6a]=backward(layerrm6a,forward_r6b,dLdY_f1); % relu
+        [dLdY_r6b,dLdr_r6b,dLdb_r6b]=backward(layerrm6b,forward_r6,dLdY_r6a); % batchnormalization
+        % Reisdual block backpropagation
+        [dLdY_b6m3a]=backward(layerb6m3a,forward_b6m3b,forward_b6m3a); % relu
+        [dLdY_b6m3b,dLdr_b6m3b,dLdb_b6m3b]=backward(layerb6m3b,forward_b6m3,dLdY_b6m3a); % batchnormalization
+        [dLdY_b6m3,dLdW_b6m3,dLdb_b6m3]=backward(layerb6m3,forward_b6m2a,dLdY_b6m3b); % 3*3*16 convolutional layer
+        [dLdY_b6m2a]=backward(layerb6m2a,forward_b6m2b,dLdY_b6m3); % relu
+        [dLdY_b6m2b,dLdr_b6m2b,dLdb_b6m2b]=backward(layerb6m2b,forward_b6m2,dLdY_b6m2a); % batchnormalization
+        [dLdY_b6m2,dLdW_b6m2,dLdb_b6m2]=backward(layerb6m2,forward_b6m1a,dLdY_b6m2b); % 3*3*16 convolutional layer
+        [dLdY_b6m1a]=backward(layerb6m1a,forward_b6m1b,dLdY_b6m2); % relu
+        [dLdY_b6m1b,dLdr_b6m1b,dLdb_b6m1b]=backward(layerb6m1b,forward_b6m1,dLdY_b6m1a); % batchnormalization
+        [dLdY_b6m1,dLdW_b6m1,dLdb_b6m1]=backward(layerb6m1,forward_c2,dLdY_b6m1b); % 3*3*16 convolutional layer
+        [dLdY_r6]=backward(layerrm6,dLdY_r6b,dLdY_b6m1); % residual layer
+        % block 5
+        [dLdY_r5a]=backward(layerrm5a,forward_r5b,dLdY_r6); % relu
+        [dLdY_r5b,dLdr_r5b,dLdb_r5b]=backward(layerrm5b,forward_r5,dLdY_r5a); % batchnormalization
+        % Reisdual block backpropagation
+        [dLdY_b5m3a]=backward(layerb5m3a,forward_b5m3b,forward_b5m3a); % relu
+        [dLdY_b5m3b,dLdr_b5m3b,dLdb_b5m3b]=backward(layerb5m3b,forward_b5m3,dLdY_b5m3a); % batchnormalization
+        [dLdY_b5m3,dLdW_b5m3,dLdb_b5m3]=backward(layerb5m3,forward_b5m2a,dLdY_b5m3b); % 3*3*16 convolutional layer
+        [dLdY_b5m2a]=backward(layerb5m2a,forward_b5m2b,dLdY_b5m3); % relu
+        [dLdY_b5m2b,dLdr_b5m2b,dLdb_b5m2b]=backward(layerb5m2b,forward_b5m2,dLdY_b5m2a); % batchnormalization
+        [dLdY_b5m2,dLdW_b5m2,dLdb_b5m2]=backward(layerb5m2,forward_b5m1a,dLdY_b5m2b); % 3*3*16 convolutional layer
+        [dLdY_b5m1a]=backward(layerb5m1a,forward_b5m1b,dLdY_b5m2); % relu
+        [dLdY_b5m1b,dLdr_b5m1b,dLdb_b5m1b]=backward(layerb5m1b,forward_b5m1,dLdY_b5m1a); % batchnormalization
+        [dLdY_b5m1,dLdW_b5m1,dLdb_b5m1]=backward(layerb5m1,forward_c1,dLdY_b5m1b); % 3*3*16 convolutional layer
+        [dLdY_r5]=backward(layerrm5,dLdY_r5b,dLdY_b5m1); % residual layer
+        % block 4
+        [dLdY_r4a]=backward(layerrm4a,forward_r4b,dLdY_r5); % relu
+        [dLdY_r4b,dLdr_r4b,dLdb_r4b]=backward(layerrm4b,forward_r4,dLdY_r4a); % batchnormalization
+        % Reisdual block backpropagation
+        [dLdY_b4m3a]=backward(layerb4m3a,forward_b4m3b,forward_b4m3a); % relu
+        [dLdY_b4m3b,dLdr_b4m3b,dLdb_b4m3b]=backward(layerb4m3b,forward_b4m3,dLdY_b4m3a); % batchnormalization
+        [dLdY_b4m3,dLdW_b4m3,dLdb_b4m3]=backward(layerb4m3,forward_b4m2a,dLdY_b4m3b); % 3*3*16 convolutional layer
+        [dLdY_b4m2a]=backward(layerb4m2a,forward_b4m2b,dLdY_b4m3); % relu
+        [dLdY_b4m2b,dLdr_b4m2b,dLdb_b4m2b]=backward(layerb4m2b,forward_b4m2,dLdY_b4m2a); % batchnormalization
+        [dLdY_b4m2,dLdW_b4m2,dLdb_b4m2]=backward(layerb4m2,forward_b4m1a,dLdY_b4m2b); % 3*3*16 convolutional layer
+        [dLdY_b4m1a]=backward(layerb4m1a,forward_b4m1b,dLdY_b4m2); % relu
+        [dLdY_b4m1b,dLdr_b4m1b,dLdb_b4m1b]=backward(layerb4m1b,forward_b4m1,dLdY_b4m1a); % batchnormalization
+        [dLdY_b4m1,dLdW_b4m1,dLdb_b4m1]=backward(layerb4m1,forward_r3a,dLdY_b4m1b); % 3*3*16 convolutional layer
+        [dLdY_r4]=backward(layerrm4,dLdY_r4b,dLdY_b4m1); % residual layer
+        % block 3
+        [dLdY_r3a]=backward(layerrm3a,forward_r3b,dLdY_r4); % relu
+        [dLdY_r3b,dLdr_r3b,dLdb_r3b]=backward(layerrm3b,forward_r3,dLdY_r3a); % batchnormalization
+        % Reisdual block backpropagation
+        [dLdY_b3m3a]=backward(layerb3m3a,forward_b3m3b,forward_b3m3a); % relu
+        [dLdY_b3m3b,dLdr_b3m3b,dLdb_b3m3b]=backward(layerb3m3b,forward_b3m3,dLdY_b3m3a); % batchnormalization
+        [dLdY_b3m3,dLdW_b3m3,dLdb_b3m3]=backward(layerb3m3,forward_b3m2a,dLdY_b3m3b); % 3*3*16 convolutional layer
+        [dLdY_b3m2a]=backward(layerb3m2a,forward_b3m2b,dLdY_b3m3); % relu
+        [dLdY_b3m2b,dLdr_b3m2b,dLdb_b3m2b]=backward(layerb3m2b,forward_b3m2,dLdY_b3m2a); % batchnormalization
+        [dLdY_b3m2,dLdW_b3m2,dLdb_b3m2]=backward(layerb3m2,forward_b3m1a,dLdY_b3m2b); % 3*3*16 convolutional layer
+        [dLdY_b3m1a]=backward(layerb3m1a,forward_b3m1b,dLdY_b3m2); % relu
+        [dLdY_b3m1b,dLdr_b3m1b,dLdb_b3m1b]=backward(layerb3m1b,forward_b3m1,dLdY_b3m1a); % batchnormalization
+        [dLdY_b3m1,dLdW_b3m1,dLdb_b3m1]=backward(layerb3m1,forward_r2a,dLdY_b3m1b); % 3*3*16 convolutional layer
+        [dLdY_r3]=backward(layerrm3,dLdY_r3b,dLdY_b3m1); % residual layer
+        % block 2
+        [dLdY_r2a]=backward(layerrm2a,forward_r2b,dLdY_r3); % relu
+        [dLdY_r2b,dLdr_r2b,dLdb_r2b]=backward(layerrm2b,forward_r2,dLdY_r2a); % batchnormalization
+        % Reisdual block backpropagation
+        [dLdY_b2m3a]=backward(layerb2m3a,forward_b2m3b,forward_b2m3a); % relu
+        [dLdY_b2m3b,dLdr_b2m3b,dLdb_b2m3b]=backward(layerb2m3b,forward_b2m3,dLdY_b2m3a); % batchnormalization
+        [dLdY_b2m3,dLdW_b2m3,dLdb_b2m3]=backward(layerb2m3,forward_b2m2a,dLdY_b2m3b); % 3*3*16 convolutional layer
+        [dLdY_b2m2a]=backward(layerb2m2a,forward_b2m2b,dLdY_b2m3); % relu
+        [dLdY_b2m2b,dLdr_b2m2b,dLdb_b2m2b]=backward(layerb2m2b,forward_b2m2,dLdY_b2m2a); % batchnormalization
+        [dLdY_b2m2,dLdW_b2m2,dLdb_b2m2]=backward(layerb2m2,forward_b2m1a,dLdY_b2m2b); % 3*3*16 convolutional layer
+        [dLdY_b2m1a]=backward(layerb2m1a,forward_b2m1b,dLdY_b2m2); % relu
+        [dLdY_b2m1b,dLdr_b2m1b,dLdb_b2m1b]=backward(layerb2m1b,forward_b2m1,dLdY_b2m1a); % batchnormalization
+        [dLdY_b2m1,dLdW_b2m1,dLdb_b2m1]=backward(layerb2m1,forward_r1a,dLdY_b2m1b); % 3*3*16 convolutional layer
+        [dLdY_r2]=backward(layerrm2,dLdY_r2b,dLdY_b2m1); % residual layer    
+        % block 1
+        [dLdY_r1a]=backward(layerrm1a,forward_r1b,dLdY_r2); % relu
+        [dLdY_r1b,dLdr_r1b,dLdb_r1b]=backward(layerrm1b,forward_r1,dLdY_r1a); % batchnormalization
+        % Reisdual block backpropagation
+        [dLdY_b1m3a]=backward(layerb1m3a,forward_b1m3b,forward_b1m3a); % relu
+        [dLdY_b1m3b,dLdr_b1m3b,dLdb_b1m3b]=backward(layerb1m3b,forward_b1m3,dLdY_b1m3a); % batchnormalization
+        [dLdY_b1m3,dLdW_b1m3,dLdb_b1m3]=backward(layerb1m3,forward_b1m2a,dLdY_b1m3b); % 3*3*16 convolutional layer
+        [dLdY_b1m2a]=backward(layerb1m2a,forward_b1m2b,dLdY_b1m3); % relu
+        [dLdY_b1m2b,dLdr_b1m2b,dLdb_b1m2b]=backward(layerb1m2b,forward_b1m2,dLdY_b1m2a); % batchnormalization
+        [dLdY_b1m2,dLdW_b1m2,dLdb_b1m2]=backward(layerb1m2,forward_b1m1a,dLdY_b1m2b); % 3*3*16 convolutional layer
+        [dLdY_b1m1a]=backward(layerb1m1a,forward_b1m1b,dLdY_b1m2); % relu
+        [dLdY_b1m1b,dLdr_b1m1b,dLdb_b1m1b]=backward(layerb1m1b,forward_b1m1,dLdY_b1m1a); % batchnormalization
+        [dLdY_b1m1,dLdW_b1m1,dLdb_b1m1]=backward(layerb1m1,train_data,dLdY_b1m1b); % 3*3*16 convolutional layer
+        [dLdY_r1]=backward(layerrm1,dLdY_r1b,dLdY_b1m1); % residual layer 
+
+        % optimizing and updating the parameters 
+        % flatten layer
+        % batchnormalization layer
+        [updated_b_f1b,out_momentum1_b_f1b,out_momentum2_b_f1b]=Adam_Optimizer(momentum_b_f1b_1,momentum_b_f1b_2,0.9,0.999,0.01,i_iter,layerf1b.beta,dLdb_f1b);
+        [updated_r_f1b,out_momentum1_r_f1b,out_momentum2_r_f1b]=Adam_Optimizer(momentum_r_f1b_1,momentum_r_f1b_2,0.9,0.999,0.01,i_iter,layerf1b.gamma,dLdr_f1b);
+        layerf1b.beta=updated_b_f1b;
+        layerf1b.gamma=updated_r_f1b;
+        momentum_b_f1b_1=out_momentum1_b_f1b; momentum_b_f1b_2=out_momentum2_b_f1b;
+        momentum_r_f1b_1=out_momentum1_r_f1b; momentum_r_f1b_2=out_momentum2_r_f1b;
+        % convolutional layer
+        [updated_W_f1,out_momentum1_W_f1,out_momentum2_W_f1]=Adam_Optimizer(momentum_W_f1_1,momentum_W_f1_2,0.9,0.999,0.01,i_iter,layerf1.Weights,dLdW_f1);
+        [updated_B_f1,out_momentum1_B_f1,out_momentum2_B_f1]=Adam_Optimizer(momentum_B_f1_1,momentum_B_f1_2,0.9,0.999,0.01,i_iter,layerf1.Bias,dLdb_f1);
+        layerf1.Weights=updated_W_f1;
+        layerf1.Bias=updated_B_f1;
+        momentum_W_f1_1=out_momentum1_W_f1; momentum_W_f1_2=out_momentum2_W_f1;
+        momentum_B_f1_1=out_momentum1_B_f1; momentum_B_f1_2=out_momentum2_B_f1;
+        % block 6
+        % residual layer 6
+        [updated_b_r6b,out_momentum1_b_r6b,out_momentum2_b_r6b]=Adam_Optimizer(momentum_b_r6b_1,momentum_b_r6b_2,0.9,0.999,0.01,i_iter,layerrm6b.beta,dLdb_r6b);
+        [updated_r_r6b,out_momentum1_r_r6b,out_momentum2_r_r6b]=Adam_Optimizer(momentum_r_r6b_1,momentum_r_r6b_2,0.9,0.999,0.01,i_iter,layerrm6b.gamma,dLdr_r6b);
+        layerrm6b.beta=updated_b_r6b;
+        layerrm6b.gamma=updated_r_r6b;
+        momentum_b_r6b_1=out_momentum1_b_r6b; momentum_b_r6b_2=out_momentum2_b_r6b;
+        momentum_r_r6b_1=out_momentum1_r_r6b; momentum_r_r6b_2=out_momentum2_r_r6b;
+        % module 3
+        [updated_b_b6m3,out_momentum1_b_b6m3,out_momentum2_b_b6m3]=Adam_Optimizer(momentum_b_b6m3_1,momentum_b_b6m3_2,0.9,0.999,0.01,i_iter,layerb6m3b.beta,dLdb_b6m3b);
+        [updated_r_b6m3,out_momentum1_r_b6m3,out_momentum2_r_b6m3]=Adam_Optimizer(momentum_r_b6m3_1,momentum_r_b6m3_2,0.9,0.999,0.01,i_iter,layerb6m3b.gamma,dLdr_b6m3b);
+        [updated_W_b6m3,out_momentum1_W_b6m3,out_momentum2_W_b6m3]=Adam_Optimizer(momentum_W_b6m3_1,momentum_W_b6m3_2,0.9,0.999,0.01,i_iter,layerb6m3.Weights,dLdW_b6m3);
+        [updated_B_b6m3,out_momentum1_B_b6m3,out_momentum2_B_b6m3]=Adam_Optimizer(momentum_B_b6m3_1,momentum_B_b6m3_2,0.9,0.999,0.01,i_iter,layerb6m3.Bias,dLdb_b6m3);
+        layerb6m3b.beta=updated_b_b6m3;
+        layerb6m3b.gamma=updated_r_b6m3;
+        momentum_b_b6m3_1=out_momentum1_b_b6m3; momentum_b_b6m3_2=out_momentum2_b_b6m3;
+        momentum_r_b6m3_1=out_momentum1_r_b6m3; momentum_r_b6m3_2=out_momentum2_r_b6m3;
+        layerb6m3.Weights=updated_W_b6m3;
+        layerb6m3.Bias=updated_B_b6m3;
+        momentum_W_b6m3_1=out_momentum1_W_b6m3; momentum_W_b6m3_2=out_momentum2_W_b6m3;
+        momentum_B_b6m3_1=out_momentum1_B_b6m3; momentum_B_b6m3_2=out_momentum2_B_b6m3;  
+        % module 2
+        [updated_b_b6m2,out_momentum1_b_b6m2,out_momentum2_b_b6m2]=Adam_Optimizer(momentum_b_b6m2_1,momentum_b_b6m2_2,0.9,0.999,0.01,i_iter,layerb6m2b.beta,dLdb_b6m2b);
+        [updated_r_b6m2,out_momentum1_r_b6m2,out_momentum2_r_b6m2]=Adam_Optimizer(momentum_r_b6m2_1,momentum_r_b6m2_2,0.9,0.999,0.01,i_iter,layerb6m2b.gamma,dLdr_b6m2b);
+        [updated_W_b6m2,out_momentum1_W_b6m2,out_momentum2_W_b6m2]=Adam_Optimizer(momentum_W_b6m2_1,momentum_W_b6m2_2,0.9,0.999,0.01,i_iter,layerb6m2.Weights,dLdW_b6m2);
+        [updated_B_b6m2,out_momentum1_B_b6m2,out_momentum2_B_b6m2]=Adam_Optimizer(momentum_B_b6m2_1,momentum_B_b6m2_2,0.9,0.999,0.01,i_iter,layerb6m2.Bias,dLdb_b6m2);
+        layerb6m2b.beta=updated_b_b6m2;
+        layerb6m2b.gamma=updated_r_b6m2;
+        momentum_b_b6m2_1=out_momentum1_b_b6m2; momentum_b_b6m2_2=out_momentum2_b_b6m2;
+        momentum_r_b6m2_1=out_momentum1_r_b6m2; momentum_r_b6m2_2=out_momentum2_r_b6m2;
+        layerb6m2.Weights=updated_W_b6m2;
+        layerb6m2.Bias=updated_B_b6m2;
+        momentum_W_b6m2_1=out_momentum1_W_b6m2; momentum_W_b6m2_2=out_momentum2_W_b6m2;
+        momentum_B_b6m2_1=out_momentum1_B_b6m2; momentum_B_b6m2_2=out_momentum2_B_b6m2;   
+        % module 1
+        [updated_b_b6m1,out_momentum1_b_b6m1,out_momentum2_b_b6m1]=Adam_Optimizer(momentum_b_b6m1_1,momentum_b_b6m1_2,0.9,0.999,0.01,i_iter,layerb6m1b.beta,dLdb_b6m1b);
+        [updated_r_b6m1,out_momentum1_r_b6m1,out_momentum2_r_b6m1]=Adam_Optimizer(momentum_r_b6m1_1,momentum_r_b6m1_2,0.9,0.999,0.01,i_iter,layerb6m1b.gamma,dLdr_b6m1b);
+        [updated_W_b6m1,out_momentum1_W_b6m1,out_momentum2_W_b6m1]=Adam_Optimizer(momentum_W_b6m1_1,momentum_W_b6m1_2,0.9,0.999,0.01,i_iter,layerb6m1.Weights,dLdW_b6m1);
+        [updated_B_b6m1,out_momentum1_B_b6m1,out_momentum2_B_b6m1]=Adam_Optimizer(momentum_B_b6m1_1,momentum_B_b6m1_2,0.9,0.999,0.01,i_iter,layerb6m1.Bias,dLdb_b6m1);
+        layerb6m1b.beta=updated_b_b6m1;
+        layerb6m1b.gamma=updated_r_b6m1;
+        momentum_b_b6m1_1=out_momentum1_b_b6m1; momentum_b_b6m1_2=out_momentum2_b_b6m1;
+        momentum_r_b6m1_1=out_momentum1_r_b6m1; momentum_r_b6m1_2=out_momentum2_r_b6m1;
+        layerb6m1.Weights=updated_W_b6m1;
+        layerb6m1.Bias=updated_B_b6m1;
+        momentum_W_b6m1_1=out_momentum1_W_b6m1; momentum_W_b6m1_2=out_momentum2_W_b6m1;
+        momentum_B_b6m1_1=out_momentum1_B_b6m1; momentum_B_b6m1_2=out_momentum2_B_b6m1; 
+        % block 5
+        % residual layer 5
+        [updated_b_r5b,out_momentum1_b_r5b,out_momentum2_b_r5b]=Adam_Optimizer(momentum_b_r5b_1,momentum_b_r5b_2,0.9,0.999,0.01,i_iter,layerrm5b.beta,dLdb_r5b);
+        [updated_r_r5b,out_momentum1_r_r5b,out_momentum2_r_r5b]=Adam_Optimizer(momentum_r_r5b_1,momentum_r_r5b_2,0.9,0.999,0.01,i_iter,layerrm5b.gamma,dLdr_r5b);
+        layerrm5b.beta=updated_b_r5b;
+        layerrm5b.gamma=updated_r_r5b;
+        momentum_b_r5b_1=out_momentum1_b_r5b; momentum_b_r5b_2=out_momentum2_b_r5b;
+        momentum_r_r5b_1=out_momentum1_r_r5b; momentum_r_r5b_2=out_momentum2_r_r5b;
+        % module 3
+        [updated_b_b5m3,out_momentum1_b_b5m3,out_momentum2_b_b5m3]=Adam_Optimizer(momentum_b_b5m3_1,momentum_b_b5m3_2,0.9,0.999,0.01,i_iter,layerb5m3b.beta,dLdb_b5m3b);
+        [updated_r_b5m3,out_momentum1_r_b5m3,out_momentum2_r_b5m3]=Adam_Optimizer(momentum_r_b5m3_1,momentum_r_b5m3_2,0.9,0.999,0.01,i_iter,layerb5m3b.gamma,dLdr_b5m3b);
+        [updated_W_b5m3,out_momentum1_W_b5m3,out_momentum2_W_b5m3]=Adam_Optimizer(momentum_W_b5m3_1,momentum_W_b5m3_2,0.9,0.999,0.01,i_iter,layerb5m3.Weights,dLdW_b5m3);
+        [updated_B_b5m3,out_momentum1_B_b5m3,out_momentum2_B_b5m3]=Adam_Optimizer(momentum_B_b5m3_1,momentum_B_b5m3_2,0.9,0.999,0.01,i_iter,layerb5m3.Bias,dLdb_b5m3);
+        layerb5m3b.beta=updated_b_b5m3;
+        layerb5m3b.gamma=updated_r_b5m3;
+        momentum_b_b5m3_1=out_momentum1_b_b5m3; momentum_b_b5m3_2=out_momentum2_b_b5m3;
+        momentum_r_b5m3_1=out_momentum1_r_b5m3; momentum_r_b5m3_2=out_momentum2_r_b5m3;
+        layerb5m3.Weights=updated_W_b5m3;
+        layerb5m3.Bias=updated_B_b5m3;
+        momentum_W_b5m3_1=out_momentum1_W_b5m3; momentum_W_b5m3_2=out_momentum2_W_b5m3;
+        momentum_B_b5m3_1=out_momentum1_B_b5m3; momentum_B_b5m3_2=out_momentum2_B_b5m3;  
+        % module 2
+        [updated_b_b5m2,out_momentum1_b_b5m2,out_momentum2_b_b5m2]=Adam_Optimizer(momentum_b_b5m2_1,momentum_b_b5m2_2,0.9,0.999,0.01,i_iter,layerb5m2b.beta,dLdb_b5m2b);
+        [updated_r_b5m2,out_momentum1_r_b5m2,out_momentum2_r_b5m2]=Adam_Optimizer(momentum_r_b5m2_1,momentum_r_b5m2_2,0.9,0.999,0.01,i_iter,layerb5m2b.gamma,dLdr_b5m2b);
+        [updated_W_b5m2,out_momentum1_W_b5m2,out_momentum2_W_b5m2]=Adam_Optimizer(momentum_W_b5m2_1,momentum_W_b5m2_2,0.9,0.999,0.01,i_iter,layerb5m2.Weights,dLdW_b5m2);
+        [updated_B_b5m2,out_momentum1_B_b5m2,out_momentum2_B_b5m2]=Adam_Optimizer(momentum_B_b5m2_1,momentum_B_b5m2_2,0.9,0.999,0.01,i_iter,layerb5m2.Bias,dLdb_b5m2);
+        layerb5m2b.beta=updated_b_b5m2;
+        layerb5m2b.gamma=updated_r_b5m2;
+        momentum_b_b5m2_1=out_momentum1_b_b5m2; momentum_b_b5m2_2=out_momentum2_b_b5m2;
+        momentum_r_b5m2_1=out_momentum1_r_b5m2; momentum_r_b5m2_2=out_momentum2_r_b5m2;
+        layerb5m2.Weights=updated_W_b5m2;
+        layerb5m2.Bias=updated_B_b5m2;
+        momentum_W_b5m2_1=out_momentum1_W_b5m2; momentum_W_b5m2_2=out_momentum2_W_b5m2;
+        momentum_B_b5m2_1=out_momentum1_B_b5m2; momentum_B_b5m2_2=out_momentum2_B_b5m2;   
+        % module 1
+        [updated_b_b5m1,out_momentum1_b_b5m1,out_momentum2_b_b5m1]=Adam_Optimizer(momentum_b_b5m1_1,momentum_b_b5m1_2,0.9,0.999,0.01,i_iter,layerb5m1b.beta,dLdb_b5m1b);
+        [updated_r_b5m1,out_momentum1_r_b5m1,out_momentum2_r_b5m1]=Adam_Optimizer(momentum_r_b5m1_1,momentum_r_b5m1_2,0.9,0.999,0.01,i_iter,layerb5m1b.gamma,dLdr_b5m1b);
+        [updated_W_b5m1,out_momentum1_W_b5m1,out_momentum2_W_b5m1]=Adam_Optimizer(momentum_W_b5m1_1,momentum_W_b5m1_2,0.9,0.999,0.01,i_iter,layerb5m1.Weights,dLdW_b5m1);
+        [updated_B_b5m1,out_momentum1_B_b5m1,out_momentum2_B_b5m1]=Adam_Optimizer(momentum_B_b5m1_1,momentum_B_b5m1_2,0.9,0.999,0.01,i_iter,layerb5m1.Bias,dLdb_b5m1);
+        layerb5m1b.beta=updated_b_b5m1;
+        layerb5m1b.gamma=updated_r_b5m1;
+        momentum_b_b5m1_1=out_momentum1_b_b5m1; momentum_b_b5m1_2=out_momentum2_b_b5m1;
+        momentum_r_b5m1_1=out_momentum1_r_b5m1; momentum_r_b5m1_2=out_momentum2_r_b5m1;
+        layerb5m1.Weights=updated_W_b5m1;
+        layerb5m1.Bias=updated_B_b5m1;
+        momentum_W_b5m1_1=out_momentum1_W_b5m1; momentum_W_b5m1_2=out_momentum2_W_b5m1;
+        momentum_B_b5m1_1=out_momentum1_B_b5m1; momentum_B_b5m1_2=out_momentum2_B_b5m1; 
+        % block 4
+        % residual layer 4
+        [updated_b_r4b,out_momentum1_b_r4b,out_momentum2_b_r4b]=Adam_Optimizer(momentum_b_r4b_1,momentum_b_r4b_2,0.9,0.999,0.01,i_iter,layerrm4b.beta,dLdb_r4b);
+        [updated_r_r4b,out_momentum1_r_r4b,out_momentum2_r_r4b]=Adam_Optimizer(momentum_r_r4b_1,momentum_r_r4b_2,0.9,0.999,0.01,i_iter,layerrm4b.gamma,dLdr_r4b);
+        layerrm4b.beta=updated_b_r4b;
+        layerrm4b.gamma=updated_r_r4b;
+        momentum_b_r4b_1=out_momentum1_b_r4b; momentum_b_r4b_2=out_momentum2_b_r4b;
+        momentum_r_r4b_1=out_momentum1_r_r4b; momentum_r_r4b_2=out_momentum2_r_r4b;
+        % module 3
+        [updated_b_b4m3,out_momentum1_b_b4m3,out_momentum2_b_b4m3]=Adam_Optimizer(momentum_b_b4m3_1,momentum_b_b4m3_2,0.9,0.999,0.01,i_iter,layerb4m3b.beta,dLdb_b4m3b);
+        [updated_r_b4m3,out_momentum1_r_b4m3,out_momentum2_r_b4m3]=Adam_Optimizer(momentum_r_b4m3_1,momentum_r_b4m3_2,0.9,0.999,0.01,i_iter,layerb4m3b.gamma,dLdr_b4m3b);
+        [updated_W_b4m3,out_momentum1_W_b4m3,out_momentum2_W_b4m3]=Adam_Optimizer(momentum_W_b4m3_1,momentum_W_b4m3_2,0.9,0.999,0.01,i_iter,layerb4m3.Weights,dLdW_b4m3);
+        [updated_B_b4m3,out_momentum1_B_b4m3,out_momentum2_B_b4m3]=Adam_Optimizer(momentum_B_b4m3_1,momentum_B_b4m3_2,0.9,0.999,0.01,i_iter,layerb4m3.Bias,dLdb_b4m3);
+        layerb4m3b.beta=updated_b_b4m3;
+        layerb4m3b.gamma=updated_r_b4m3;
+        momentum_b_b4m3_1=out_momentum1_b_b4m3; momentum_b_b4m3_2=out_momentum2_b_b4m3;
+        momentum_r_b4m3_1=out_momentum1_r_b4m3; momentum_r_b4m3_2=out_momentum2_r_b4m3;
+        layerb4m3.Weights=updated_W_b4m3;
+        layerb4m3.Bias=updated_B_b4m3;
+        momentum_W_b4m3_1=out_momentum1_W_b4m3; momentum_W_b4m3_2=out_momentum2_W_b4m3;
+        momentum_B_b4m3_1=out_momentum1_B_b4m3; momentum_B_b4m3_2=out_momentum2_B_b4m3;  
+        % module 2
+        [updated_b_b4m2,out_momentum1_b_b4m2,out_momentum2_b_b4m2]=Adam_Optimizer(momentum_b_b4m2_1,momentum_b_b4m2_2,0.9,0.999,0.01,i_iter,layerb4m2b.beta,dLdb_b4m2b);
+        [updated_r_b4m2,out_momentum1_r_b4m2,out_momentum2_r_b4m2]=Adam_Optimizer(momentum_r_b4m2_1,momentum_r_b4m2_2,0.9,0.999,0.01,i_iter,layerb4m2b.gamma,dLdr_b4m2b);
+        [updated_W_b4m2,out_momentum1_W_b4m2,out_momentum2_W_b4m2]=Adam_Optimizer(momentum_W_b4m2_1,momentum_W_b4m2_2,0.9,0.999,0.01,i_iter,layerb4m2.Weights,dLdW_b4m2);
+        [updated_B_b4m2,out_momentum1_B_b4m2,out_momentum2_B_b4m2]=Adam_Optimizer(momentum_B_b4m2_1,momentum_B_b4m2_2,0.9,0.999,0.01,i_iter,layerb4m2.Bias,dLdb_b4m2);
+        layerb4m2b.beta=updated_b_b4m2;
+        layerb4m2b.gamma=updated_r_b4m2;
+        momentum_b_b4m2_1=out_momentum1_b_b4m2; momentum_b_b4m2_2=out_momentum2_b_b4m2;
+        momentum_r_b4m2_1=out_momentum1_r_b4m2; momentum_r_b4m2_2=out_momentum2_r_b4m2;
+        layerb4m2.Weights=updated_W_b4m2;
+        layerb4m2.Bias=updated_B_b4m2;
+        momentum_W_b4m2_1=out_momentum1_W_b4m2; momentum_W_b4m2_2=out_momentum2_W_b4m2;
+        momentum_B_b4m2_1=out_momentum1_B_b4m2; momentum_B_b4m2_2=out_momentum2_B_b4m2;   
+        % module 1
+        [updated_b_b4m1,out_momentum1_b_b4m1,out_momentum2_b_b4m1]=Adam_Optimizer(momentum_b_b4m1_1,momentum_b_b4m1_2,0.9,0.999,0.01,i_iter,layerb4m1b.beta,dLdb_b4m1b);
+        [updated_r_b4m1,out_momentum1_r_b4m1,out_momentum2_r_b4m1]=Adam_Optimizer(momentum_r_b4m1_1,momentum_r_b4m1_2,0.9,0.999,0.01,i_iter,layerb4m1b.gamma,dLdr_b4m1b);
+        [updated_W_b4m1,out_momentum1_W_b4m1,out_momentum2_W_b4m1]=Adam_Optimizer(momentum_W_b4m1_1,momentum_W_b4m1_2,0.9,0.999,0.01,i_iter,layerb4m1.Weights,dLdW_b4m1);
+        [updated_B_b4m1,out_momentum1_B_b4m1,out_momentum2_B_b4m1]=Adam_Optimizer(momentum_B_b4m1_1,momentum_B_b4m1_2,0.9,0.999,0.01,i_iter,layerb4m1.Bias,dLdb_b4m1);
+        layerb4m1b.beta=updated_b_b4m1;
+        layerb4m1b.gamma=updated_r_b4m1;
+        momentum_b_b4m1_1=out_momentum1_b_b4m1; momentum_b_b4m1_2=out_momentum2_b_b4m1;
+        momentum_r_b4m1_1=out_momentum1_r_b4m1; momentum_r_b4m1_2=out_momentum2_r_b4m1;
+        layerb4m1.Weights=updated_W_b4m1;
+        layerb4m1.Bias=updated_B_b4m1;
+        momentum_W_b4m1_1=out_momentum1_W_b4m1; momentum_W_b4m1_2=out_momentum2_W_b4m1;
+        momentum_B_b4m1_1=out_momentum1_B_b4m1; momentum_B_b4m1_2=out_momentum2_B_b4m1; 
+        % block 3
+        % residual layer 3
+        [updated_b_r3b,out_momentum1_b_r3b,out_momentum2_b_r3b]=Adam_Optimizer(momentum_b_r3b_1,momentum_b_r3b_2,0.9,0.999,0.01,i_iter,layerrm3b.beta,dLdb_r3b);
+        [updated_r_r3b,out_momentum1_r_r3b,out_momentum2_r_r3b]=Adam_Optimizer(momentum_r_r3b_1,momentum_r_r3b_2,0.9,0.999,0.01,i_iter,layerrm3b.gamma,dLdr_r3b);
+        layerrm3b.beta=updated_b_r3b;
+        layerrm3b.gamma=updated_r_r3b;
+        momentum_b_r3b_1=out_momentum1_b_r3b; momentum_b_r3b_2=out_momentum2_b_r3b;
+        momentum_r_r3b_1=out_momentum1_r_r3b; momentum_r_r3b_2=out_momentum2_r_r3b;
+        % module 3
+        [updated_b_b3m3,out_momentum1_b_b3m3,out_momentum2_b_b3m3]=Adam_Optimizer(momentum_b_b3m3_1,momentum_b_b3m3_2,0.9,0.999,0.01,i_iter,layerb3m3b.beta,dLdb_b3m3b);
+        [updated_r_b3m3,out_momentum1_r_b3m3,out_momentum2_r_b3m3]=Adam_Optimizer(momentum_r_b3m3_1,momentum_r_b3m3_2,0.9,0.999,0.01,i_iter,layerb3m3b.gamma,dLdr_b3m3b);
+        [updated_W_b3m3,out_momentum1_W_b3m3,out_momentum2_W_b3m3]=Adam_Optimizer(momentum_W_b3m3_1,momentum_W_b3m3_2,0.9,0.999,0.01,i_iter,layerb3m3.Weights,dLdW_b3m3);
+        [updated_B_b3m3,out_momentum1_B_b3m3,out_momentum2_B_b3m3]=Adam_Optimizer(momentum_B_b3m3_1,momentum_B_b3m3_2,0.9,0.999,0.01,i_iter,layerb3m3.Bias,dLdb_b3m3);
+        layerb3m3b.beta=updated_b_b3m3;
+        layerb3m3b.gamma=updated_r_b3m3;
+        momentum_b_b3m3_1=out_momentum1_b_b3m3; momentum_b_b3m3_2=out_momentum2_b_b3m3;
+        momentum_r_b3m3_1=out_momentum1_r_b3m3; momentum_r_b3m3_2=out_momentum2_r_b3m3;
+        layerb3m3.Weights=updated_W_b3m3;
+        layerb3m3.Bias=updated_B_b3m3;
+        momentum_W_b3m3_1=out_momentum1_W_b3m3; momentum_W_b3m3_2=out_momentum2_W_b3m3;
+        momentum_B_b3m3_1=out_momentum1_B_b3m3; momentum_B_b3m3_2=out_momentum2_B_b3m3;  
+        % module 2
+        [updated_b_b3m2,out_momentum1_b_b3m2,out_momentum2_b_b3m2]=Adam_Optimizer(momentum_b_b3m2_1,momentum_b_b3m2_2,0.9,0.999,0.01,i_iter,layerb3m2b.beta,dLdb_b3m2b);
+        [updated_r_b3m2,out_momentum1_r_b3m2,out_momentum2_r_b3m2]=Adam_Optimizer(momentum_r_b3m2_1,momentum_r_b3m2_2,0.9,0.999,0.01,i_iter,layerb3m2b.gamma,dLdr_b3m2b);
+        [updated_W_b3m2,out_momentum1_W_b3m2,out_momentum2_W_b3m2]=Adam_Optimizer(momentum_W_b3m2_1,momentum_W_b3m2_2,0.9,0.999,0.01,i_iter,layerb3m2.Weights,dLdW_b3m2);
+        [updated_B_b3m2,out_momentum1_B_b3m2,out_momentum2_B_b3m2]=Adam_Optimizer(momentum_B_b3m2_1,momentum_B_b3m2_2,0.9,0.999,0.01,i_iter,layerb3m2.Bias,dLdb_b3m2);
+        layerb3m2b.beta=updated_b_b3m2;
+        layerb3m2b.gamma=updated_r_b3m2;
+        momentum_b_b3m2_1=out_momentum1_b_b3m2; momentum_b_b3m2_2=out_momentum2_b_b3m2;
+        momentum_r_b3m2_1=out_momentum1_r_b3m2; momentum_r_b3m2_2=out_momentum2_r_b3m2;
+        layerb3m2.Weights=updated_W_b3m2;
+        layerb3m2.Bias=updated_B_b3m2;
+        momentum_W_b3m2_1=out_momentum1_W_b3m2; momentum_W_b3m2_2=out_momentum2_W_b3m2;
+        momentum_B_b3m2_1=out_momentum1_B_b3m2; momentum_B_b3m2_2=out_momentum2_B_b3m2;   
+        % module 1
+        [updated_b_b3m1,out_momentum1_b_b3m1,out_momentum2_b_b3m1]=Adam_Optimizer(momentum_b_b3m1_1,momentum_b_b3m1_2,0.9,0.999,0.01,i_iter,layerb3m1b.beta,dLdb_b3m1b);
+        [updated_r_b3m1,out_momentum1_r_b3m1,out_momentum2_r_b3m1]=Adam_Optimizer(momentum_r_b3m1_1,momentum_r_b3m1_2,0.9,0.999,0.01,i_iter,layerb3m1b.gamma,dLdr_b3m1b);
+        [updated_W_b3m1,out_momentum1_W_b3m1,out_momentum2_W_b3m1]=Adam_Optimizer(momentum_W_b3m1_1,momentum_W_b3m1_2,0.9,0.999,0.01,i_iter,layerb3m1.Weights,dLdW_b3m1);
+        [updated_B_b3m1,out_momentum1_B_b3m1,out_momentum2_B_b3m1]=Adam_Optimizer(momentum_B_b3m1_1,momentum_B_b3m1_2,0.9,0.999,0.01,i_iter,layerb3m1.Bias,dLdb_b3m1);
+        layerb3m1b.beta=updated_b_b3m1;
+        layerb3m1b.gamma=updated_r_b3m1;
+        momentum_b_b3m1_1=out_momentum1_b_b3m1; momentum_b_b3m1_2=out_momentum2_b_b3m1;
+        momentum_r_b3m1_1=out_momentum1_r_b3m1; momentum_r_b3m1_2=out_momentum2_r_b3m1;
+        layerb3m1.Weights=updated_W_b3m1;
+        layerb3m1.Bias=updated_B_b3m1;
+        momentum_W_b3m1_1=out_momentum1_W_b3m1; momentum_W_b3m1_2=out_momentum2_W_b3m1;
+        momentum_B_b3m1_1=out_momentum1_B_b3m1; momentum_B_b3m1_2=out_momentum2_B_b3m1; 
+        % block 2
+        % residual layer 2
+        [updated_b_r2b,out_momentum1_b_r2b,out_momentum2_b_r2b]=Adam_Optimizer(momentum_b_r2b_1,momentum_b_r2b_2,0.9,0.999,0.01,i_iter,layerrm2b.beta,dLdb_r2b);
+        [updated_r_r2b,out_momentum1_r_r2b,out_momentum2_r_r2b]=Adam_Optimizer(momentum_r_r2b_1,momentum_r_r2b_2,0.9,0.999,0.01,i_iter,layerrm2b.gamma,dLdr_r2b);
+        layerrm2b.beta=updated_b_r2b;
+        layerrm2b.gamma=updated_r_r2b;
+        momentum_b_r2b_1=out_momentum1_b_r2b; momentum_b_r2b_2=out_momentum2_b_r2b;
+        momentum_r_r2b_1=out_momentum1_r_r2b; momentum_r_r2b_2=out_momentum2_r_r2b;
+        % module 3
+        [updated_b_b2m3,out_momentum1_b_b2m3,out_momentum2_b_b2m3]=Adam_Optimizer(momentum_b_b2m3_1,momentum_b_b2m3_2,0.9,0.999,0.01,i_iter,layerb2m3b.beta,dLdb_b2m3b);
+        [updated_r_b2m3,out_momentum1_r_b2m3,out_momentum2_r_b2m3]=Adam_Optimizer(momentum_r_b2m3_1,momentum_r_b2m3_2,0.9,0.999,0.01,i_iter,layerb2m3b.gamma,dLdr_b2m3b);
+        [updated_W_b2m3,out_momentum1_W_b2m3,out_momentum2_W_b2m3]=Adam_Optimizer(momentum_W_b2m3_1,momentum_W_b2m3_2,0.9,0.999,0.01,i_iter,layerb2m3.Weights,dLdW_b2m3);
+        [updated_B_b2m3,out_momentum1_B_b2m3,out_momentum2_B_b2m3]=Adam_Optimizer(momentum_B_b2m3_1,momentum_B_b2m3_2,0.9,0.999,0.01,i_iter,layerb2m3.Bias,dLdb_b2m3);
+        layerb2m3b.beta=updated_b_b2m3;
+        layerb2m3b.gamma=updated_r_b2m3;
+        momentum_b_b2m3_1=out_momentum1_b_b2m3; momentum_b_b2m3_2=out_momentum2_b_b2m3;
+        momentum_r_b2m3_1=out_momentum1_r_b2m3; momentum_r_b2m3_2=out_momentum2_r_b2m3;
+        layerb2m3.Weights=updated_W_b2m3;
+        layerb2m3.Bias=updated_B_b2m3;
+        momentum_W_b2m3_1=out_momentum1_W_b2m3; momentum_W_b2m3_2=out_momentum2_W_b2m3;
+        momentum_B_b2m3_1=out_momentum1_B_b2m3; momentum_B_b2m3_2=out_momentum2_B_b2m3;  
+        % module 2
+        [updated_b_b2m2,out_momentum1_b_b2m2,out_momentum2_b_b2m2]=Adam_Optimizer(momentum_b_b2m2_1,momentum_b_b2m2_2,0.9,0.999,0.01,i_iter,layerb2m2b.beta,dLdb_b2m2b);
+        [updated_r_b2m2,out_momentum1_r_b2m2,out_momentum2_r_b2m2]=Adam_Optimizer(momentum_r_b2m2_1,momentum_r_b2m2_2,0.9,0.999,0.01,i_iter,layerb2m2b.gamma,dLdr_b2m2b);
+        [updated_W_b2m2,out_momentum1_W_b2m2,out_momentum2_W_b2m2]=Adam_Optimizer(momentum_W_b2m2_1,momentum_W_b2m2_2,0.9,0.999,0.01,i_iter,layerb2m2.Weights,dLdW_b2m2);
+        [updated_B_b2m2,out_momentum1_B_b2m2,out_momentum2_B_b2m2]=Adam_Optimizer(momentum_B_b2m2_1,momentum_B_b2m2_2,0.9,0.999,0.01,i_iter,layerb2m2.Bias,dLdb_b2m2);
+        layerb2m2b.beta=updated_b_b2m2;
+        layerb2m2b.gamma=updated_r_b2m2;
+        momentum_b_b2m2_1=out_momentum1_b_b2m2; momentum_b_b2m2_2=out_momentum2_b_b2m2;
+        momentum_r_b2m2_1=out_momentum1_r_b2m2; momentum_r_b2m2_2=out_momentum2_r_b2m2;
+        layerb2m2.Weights=updated_W_b2m2;
+        layerb2m2.Bias=updated_B_b2m2;
+        momentum_W_b2m2_1=out_momentum1_W_b2m2; momentum_W_b2m2_2=out_momentum2_W_b2m2;
+        momentum_B_b2m2_1=out_momentum1_B_b2m2; momentum_B_b2m2_2=out_momentum2_B_b2m2;   
+        % module 1
+        [updated_b_b2m1,out_momentum1_b_b2m1,out_momentum2_b_b2m1]=Adam_Optimizer(momentum_b_b2m1_1,momentum_b_b2m1_2,0.9,0.999,0.01,i_iter,layerb2m1b.beta,dLdb_b2m1b);
+        [updated_r_b2m1,out_momentum1_r_b2m1,out_momentum2_r_b2m1]=Adam_Optimizer(momentum_r_b2m1_1,momentum_r_b2m1_2,0.9,0.999,0.01,i_iter,layerb2m1b.gamma,dLdr_b2m1b);
+        [updated_W_b2m1,out_momentum1_W_b2m1,out_momentum2_W_b2m1]=Adam_Optimizer(momentum_W_b2m1_1,momentum_W_b2m1_2,0.9,0.999,0.01,i_iter,layerb2m1.Weights,dLdW_b2m1);
+        [updated_B_b2m1,out_momentum1_B_b2m1,out_momentum2_B_b2m1]=Adam_Optimizer(momentum_B_b2m1_1,momentum_B_b2m1_2,0.9,0.999,0.01,i_iter,layerb2m1.Bias,dLdb_b2m1);
+        layerb2m1b.beta=updated_b_b2m1;
+        layerb2m1b.gamma=updated_r_b2m1;
+        momentum_b_b2m1_1=out_momentum1_b_b2m1; momentum_b_b2m1_2=out_momentum2_b_b2m1;
+        momentum_r_b2m1_1=out_momentum1_r_b2m1; momentum_r_b2m1_2=out_momentum2_r_b2m1;
+        layerb2m1.Weights=updated_W_b2m1;
+        layerb2m1.Bias=updated_B_b2m1;
+        momentum_W_b2m1_1=out_momentum1_W_b2m1; momentum_W_b2m1_2=out_momentum2_W_b2m1;
+        momentum_B_b2m1_1=out_momentum1_B_b2m1; momentum_B_b2m1_2=out_momentum2_B_b2m1; 
+        % block 1
+        % residual layer 1
+        [updated_b_r1b,out_momentum1_b_r1b,out_momentum2_b_r1b]=Adam_Optimizer(momentum_b_r1b_1,momentum_b_r1b_2,0.9,0.999,0.01,i_iter,layerrm1b.beta,dLdb_r1b);
+        [updated_r_r1b,out_momentum1_r_r1b,out_momentum2_r_r1b]=Adam_Optimizer(momentum_r_r1b_1,momentum_r_r1b_2,0.9,0.999,0.01,i_iter,layerrm1b.gamma,dLdr_r1b);
+        layerrm1b.beta=updated_b_r1b;
+        layerrm1b.gamma=updated_r_r1b;
+        momentum_b_r1b_1=out_momentum1_b_r1b; momentum_b_r1b_2=out_momentum2_b_r1b;
+        momentum_r_r1b_1=out_momentum1_r_r1b; momentum_r_r1b_2=out_momentum2_r_r1b;
+        % module 3
+        [updated_b_b1m3,out_momentum1_b_b1m3,out_momentum2_b_b1m3]=Adam_Optimizer(momentum_b_b1m3_1,momentum_b_b1m3_2,0.9,0.999,0.01,i_iter,layerb1m3b.beta,dLdb_b1m3b);
+        [updated_r_b1m3,out_momentum1_r_b1m3,out_momentum2_r_b1m3]=Adam_Optimizer(momentum_r_b1m3_1,momentum_r_b1m3_2,0.9,0.999,0.01,i_iter,layerb1m3b.gamma,dLdr_b1m3b);
+        [updated_W_b1m3,out_momentum1_W_b1m3,out_momentum2_W_b1m3]=Adam_Optimizer(momentum_W_b1m3_1,momentum_W_b1m3_2,0.9,0.999,0.01,i_iter,layerb1m3.Weights,dLdW_b1m3);
+        [updated_B_b1m3,out_momentum1_B_b1m3,out_momentum2_B_b1m3]=Adam_Optimizer(momentum_B_b1m3_1,momentum_B_b1m3_2,0.9,0.999,0.01,i_iter,layerb1m3.Bias,dLdb_b1m3);
+        layerb1m3b.beta=updated_b_b1m3;
+        layerb1m3b.gamma=updated_r_b1m3;
+        momentum_b_b1m3_1=out_momentum1_b_b1m3; momentum_b_b1m3_2=out_momentum2_b_b1m3;
+        momentum_r_b1m3_1=out_momentum1_r_b1m3; momentum_r_b1m3_2=out_momentum2_r_b1m3;
+        layerb1m3.Weights=updated_W_b1m3;
+        layerb1m3.Bias=updated_B_b1m3;
+        momentum_W_b1m3_1=out_momentum1_W_b1m3; momentum_W_b1m3_2=out_momentum2_W_b1m3;
+        momentum_B_b1m3_1=out_momentum1_B_b1m3; momentum_B_b1m3_2=out_momentum2_B_b1m3;  
+        % module 2
+        [updated_b_b1m2,out_momentum1_b_b1m2,out_momentum2_b_b1m2]=Adam_Optimizer(momentum_b_b1m2_1,momentum_b_b1m2_2,0.9,0.999,0.01,i_iter,layerb1m2b.beta,dLdb_b1m2b);
+        [updated_r_b1m2,out_momentum1_r_b1m2,out_momentum2_r_b1m2]=Adam_Optimizer(momentum_r_b1m2_1,momentum_r_b1m2_2,0.9,0.999,0.01,i_iter,layerb1m2b.gamma,dLdr_b1m2b);
+        [updated_W_b1m2,out_momentum1_W_b1m2,out_momentum2_W_b1m2]=Adam_Optimizer(momentum_W_b1m2_1,momentum_W_b1m2_2,0.9,0.999,0.01,i_iter,layerb1m2.Weights,dLdW_b1m2);
+        [updated_B_b1m2,out_momentum1_B_b1m2,out_momentum2_B_b1m2]=Adam_Optimizer(momentum_B_b1m2_1,momentum_B_b1m2_2,0.9,0.999,0.01,i_iter,layerb1m2.Bias,dLdb_b1m2);
+        layerb1m2b.beta=updated_b_b1m2;
+        layerb1m2b.gamma=updated_r_b1m2;
+        momentum_b_b1m2_1=out_momentum1_b_b1m2; momentum_b_b1m2_2=out_momentum2_b_b1m2;
+        momentum_r_b1m2_1=out_momentum1_r_b1m2; momentum_r_b1m2_2=out_momentum2_r_b1m2;
+        layerb1m2.Weights=updated_W_b1m2;
+        layerb1m2.Bias=updated_B_b1m2;
+        momentum_W_b1m2_1=out_momentum1_W_b1m2; momentum_W_b1m2_2=out_momentum2_W_b1m2;
+        momentum_B_b1m2_1=out_momentum1_B_b1m2; momentum_B_b1m2_2=out_momentum2_B_b1m2;   
+        % module 1
+        [updated_b_b1m1,out_momentum1_b_b1m1,out_momentum2_b_b1m1]=Adam_Optimizer(momentum_b_b1m1_1,momentum_b_b1m1_2,0.9,0.999,0.01,i_iter,layerb1m1b.beta,dLdb_b1m1b);
+        [updated_r_b1m1,out_momentum1_r_b1m1,out_momentum2_r_b1m1]=Adam_Optimizer(momentum_r_b1m1_1,momentum_r_b1m1_2,0.9,0.999,0.01,i_iter,layerb1m1b.gamma,dLdr_b1m1b);
+        [updated_W_b1m1,out_momentum1_W_b1m1,out_momentum2_W_b1m1]=Adam_Optimizer(momentum_W_b1m1_1,momentum_W_b1m1_2,0.9,0.999,0.01,i_iter,layerb1m1.Weights,dLdW_b1m1);
+        [updated_B_b1m1,out_momentum1_B_b1m1,out_momentum2_B_b1m1]=Adam_Optimizer(momentum_B_b1m1_1,momentum_B_b1m1_2,0.9,0.999,0.01,i_iter,layerb1m1.Bias,dLdb_b1m1);
+        layerb1m1b.beta=updated_b_b1m1;
+        layerb1m1b.gamma=updated_r_b1m1;
+        momentum_b_b1m1_1=out_momentum1_b_b1m1; momentum_b_b1m1_2=out_momentum2_b_b1m1;
+        momentum_r_b1m1_1=out_momentum1_r_b1m1; momentum_r_b1m1_2=out_momentum2_r_b1m1;
+        layerb1m1.Weights=updated_W_b1m1;
+        layerb1m1.Bias=updated_B_b1m1;
+        momentum_W_b1m1_1=out_momentum1_W_b1m1; momentum_W_b1m1_2=out_momentum2_W_b1m1;
+        momentum_B_b1m1_1=out_momentum1_B_b1m1; momentum_B_b1m1_2=out_momentum2_B_b1m1; 
+    end
+    toc
+
+    % save trained network
+    trained_net=[layerb1m1 layerb1m1b layerb1m1a...
+                 layerb1m2 layerb1m2b layerb1m2a ...
+                 layerb1m3 layerb1m3b layerb1m3a ...
+                 layerrm1 layerrm1b layerrm1a ...
+                 layerb2m1 layerb2m1b layerb2m1a...
+                 layerb2m2 layerb2m2b layerb2m2a ...
+                 layerb2m3 layerb2m3b layerb2m3a ...
+                 layerrm2 layerrm2b layerrm2a ...
+                 layerb3m1 layerb3m1b layerb3m1a...
+                 layerb3m2 layerb3m2b layerb3m2a ...
+                 layerb3m3 layerb3m3b layerb3m3a ...
+                 layerrm3 layerrm3b layerrm3a ...
+                 layerb4m1 layerb4m1b layerb4m1a...
+                 layerb4m2 layerb4m2b layerb4m2a ...
+                 layerb4m3 layerb4m3b layerb4m3a ...
+                 layerrm4 layerrm4b layerrm4a ...
+                 layer_c1 ...
+                 layerb5m1 layerb5m1b layerb5m1a...
+                 layerb5m2 layerb5m2b layerb5m2a ...
+                 layerb5m3 layerb5m3b layerb5m3a ...
+                 layerrm5 layerrm5b layerrm5a ...          
+                 layer_c2 ...
+                 layerb6m1 layerb6m1b layerb6m1a...
+                 layerb6m2 layerb6m2b layerb6m2a ...
+                 layerb6m3 layerb6m3b layerb6m3a ...
+                 layerrm6 layerrm6b layerrm6a ... 
+                 layerf1 layerf1b layerf1a ...
+                 layer_l];
+    save trained_net
+
+end

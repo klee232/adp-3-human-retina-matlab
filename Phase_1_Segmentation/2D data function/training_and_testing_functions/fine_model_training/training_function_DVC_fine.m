@@ -1,0 +1,492 @@
+% Created by Kuan-Min Lee
+% Created date: Mar. 6th, 2024
+% All rights reserved to Leelab.ai
+
+% Brief User Introduction:
+% This function is built to train the implemented neural network
+
+% Input Parameter:
+% network: implemented deep learning neural netowrk (dlnetwork object)
+% orig_data: data for training purpose (for our case, OCTA
+% segmentation data)
+% orig_gt_data: groundtruth for training purpose (for our case, labels for each sample)
+% orig_valid_data: data for validation purpose (for our case, OCTA
+% segmentation data for validation)
+% orig_valid_gt_data: data for validation purpose (for our case, labels for
+% each sample in validation data)
+% num_epoch: number of epoches for training
+% learning_rate: learning rate for optimization algorithm
+
+% Output Parameter:
+% trained_network: trained neural network (dlnetwork)
+
+
+function trained_network=training_function_DVC_fine(network, trained_coarse_network,orig_data, orig_gt_data, orig_valid_data, orig_valid_gt_data,num_epoch,learning_rate,lyr)
+
+    tic
+    %% forward the original data to the trained coarse network
+    % training data
+    num_fold=size(orig_data,4);
+    num_sample=size(orig_data,3);
+    data=zeros(size(orig_data,1),size(orig_data,2),2,num_sample,num_fold);
+    for i_fold=1:num_fold
+        for i_train_sample=1:num_sample
+            current_train_sample=orig_data(:,:,i_train_sample,i_fold);
+            current_train_sample=dlarray(current_train_sample,"SSCB");
+            pred_current_coarse_sample=forward(trained_coarse_network,current_train_sample);
+            data(:,:,1,i_train_sample,i_fold)=current_train_sample;
+            data(:,:,2,i_train_sample,i_fold)=pred_current_coarse_sample;
+        end
+    end
+
+    % validation data
+    num_valid_sample=size(orig_valid_data,3);
+    valid_data=zeros(size(orig_valid_data,1),size(orig_valid_data,2),2,num_valid_sample,num_fold);
+    for i_fold=1:num_fold
+        for i_valid_sample=1:num_valid_sample
+            current_valid_sample=orig_valid_data(:,:,i_valid_sample,i_fold);
+            current_valid_sample=dlarray(current_valid_sample,"SSCB");
+            pred_current_coarse_sample=forward(trained_coarse_network,current_valid_sample);
+            valid_data(:,:,1,i_valid_sample,i_fold)=current_valid_sample;
+            valid_data(:,:,2,i_valid_sample,i_fold)=pred_current_coarse_sample;
+        end
+    end
+
+
+    %% Convert data to dlarray
+    % training data
+    gt_data=permute(orig_gt_data,[1, 2, 5, 3, 4]);
+    % validation data
+    valid_gt_data=permute(orig_valid_gt_data,[1, 2, 5, 3, 4]);
+
+
+    %% Initialize training progress
+    % setup variable for storing training and validation loss
+    train_loss=zeros(num_fold,num_epoch,1);
+    valid_loss=zeros(num_fold,num_epoch,1);
+    % setup variable for update parameters
+    gradientDecayFactor = 0.9;
+    squaredGradientDecayFactor = 0.99;
+
+
+    %% Training loop
+    %% load parameters if existed
+    if exist("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp","dir")
+       % check if the directory is empty
+       contents=dir("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp");
+       contents=contents(~ismember({contents.name},{'.','..'}));
+       is_empty=isempty(contents);
+       % if not empty load the file
+       if ~is_empty
+           load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/net.mat");
+           load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/i_fold.mat");
+           load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/i_sample.mat");
+           load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/epoch.mat");
+           load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/train_loss.mat");
+           load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/valid_loss.mat");
+           start_epoch=epoch;
+           start_fold=i_fold;
+           start_sample=i_sample;
+           fold_valid_loss=valid_loss(start_fold,:);
+           best_valid_loss=min(fold_valid_loss(fold_valid_loss~=0));
+           if start_sample~=1 && start_epoch~=1
+              load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/accumulated_loss.mat");
+              load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/accumulated_gradient.mat");
+              load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/average_gradient.mat");
+              load("Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/average_squared_gradient.mat");
+           end
+       % otherwise, initialize parameters
+       else
+           start_epoch=1;
+           start_fold=1;
+           start_sample=1;
+           net_storage=cell(num_fold,1);
+       end
+    % if not, initialize the paramters
+    else
+        start_epoch=1;
+        start_fold=1;
+        start_sample=1;
+        net_storage=cell(num_fold,1);
+    end
+ 
+
+    %% loop through each fold
+    num_epoch_plot=zeros(num_fold,1);
+    % for i_fold=start_fold:num_fold
+    for i_fold=start_fold:num_fold
+        % net=initialize(network);
+        break_mark_epoch=false;
+        termination_counter=0;
+
+        % create fold data
+        fold_data=data(:,:,:,:,i_fold);
+        fold_gt_data=gt_data(:,:,:,:,i_fold);
+        fold_data=dlarray(fold_data,"SSCB");
+        fold_gt_data=dlarray(fold_gt_data,"SSCB");
+
+        % initialize neural network
+        net=initialize(network);
+
+        % loop through each epoch
+        % loop through given number of epoches
+        for epoch = start_epoch:num_epoch
+            if break_mark_epoch
+                break;
+            end
+    
+            % initialize average gradient variable for the first epoch
+            if epoch==1
+                average_gradient=[];
+                average_squared_gradient=[];
+            end
+    
+            % use GPU if it can
+            if canUseGPU
+                fold_data=gpuArray(fold_data);
+                fold_gt_data=gpuArray(fold_gt_data);
+                valid_data=gpuArray(valid_data);
+                valid_gt_data=gpuArray(valid_gt_data);
+            end
+
+            
+            %% 2D Version loop 
+            for i_sample=start_sample:num_sample
+                % create accumulated gradient variable (refresh in every epoch)
+                if i_sample==1
+                    accumulated_gradient=[];
+                    % accumulated_dice_loss=0;
+                    % accumulated_bce_loss=0;
+                    accumulated_loss=0;
+                end
+
+                % create batched data
+                batch_fold_data=fold_data(:,:,:,i_sample);
+                batch_fold_gt_data=fold_gt_data(:,:,:,i_sample);
+
+                % Forward and backward pass
+                [gradients, dice_loss]=dlfeval(@modelGradients, net, batch_fold_data, batch_fold_gt_data);
+
+                % add on the current gradients and loss
+                num_row=size(gradients,1);
+                if isempty(accumulated_gradient)
+                    accumulated_gradient=gradients;
+                    for i_row=1:num_row
+                        accumulated_gradient.Value{i_row,1}=(accumulated_gradient.Value{i_row,1})/num_sample;
+                    end
+                else
+                    for i_row=1:num_row
+                        accumulated_gradient.Value{i_row,1}= accumulated_gradient.Value{i_row,1}+(gradients.Value{i_row,1})/num_sample;
+                    end
+                end
+                % accumulated_dice_loss=accumulated_dice_loss+dice_loss;
+                % accumulated_bce_loss=accumulated_bce_loss+bce_loss;
+                accumulated_loss=accumulated_loss+dice_loss;
+
+                % if the training reach the end of the sample do the following:
+                % 1. Update network parameters
+                % 2. store training loss
+                % 3. conduct validation
+                % 4. display accumulated loss in current epoch
+                if i_sample==num_sample
+                    % if this is the last fold, update neural network
+                    % Update parameters using Adam optimizer
+                    [updated_net, average_gradient, average_squared_gradient] = adamupdate(net, accumulated_gradient,average_gradient,average_squared_gradient, epoch, learning_rate,gradientDecayFactor, squaredGradientDecayFactor);
+                    % store training loss
+                    % t_dice_loss=accumulated_loss/num_sample;
+                    % t_bce_loss=accumulated_bce_loss/num_sample;
+                    t_loss=accumulated_loss/num_sample;
+                    train_loss(i_fold,epoch,1)=t_loss;
+                    % train_loss(i_fold,epoch,2)=t_bce_loss;
+                    % train_loss(i_fold,epoch,3)=t_loss;
+
+                    % validation phase
+                    fold_valid_data=valid_data(:,:,:,:,i_fold);
+                    fold_valid_gt_data=valid_gt_data(:,:,:,:,i_fold);
+                    fold_valid_data=dlarray(fold_valid_data,"SSCB");
+                    fold_valid_gt_data=dlarray(fold_valid_gt_data,"SSCB");
+                    v_loss=0;
+                    for i_valid=1:num_valid_sample
+                        % forward input
+                        batch_fold_valid_data=fold_valid_data(:,:,:,i_valid);
+                        batch_fold_gt_pred_valid=forward(net, batch_fold_valid_data);
+
+                        % grab out groundtruth
+                        batch_fold_gt_valid=fold_valid_gt_data(:,:,:,i_valid);
+
+                        % calculate the loss
+                        % dice loss
+                        batch_fold_gt_pred_valid=squeeze(batch_fold_gt_pred_valid);
+                        batch_fold_gt_valid=squeeze(batch_fold_gt_valid);
+                        % smooth=1e-7;
+                        % intersect=sum(batch_fold_gt_pred_valid(:).*batch_fold_gt_valid(:));
+                        % pred_sum=sum(batch_fold_gt_pred_valid(:));
+                        % gt_sum=sum(batch_fold_gt_valid(:));
+                        % dice_score=(2*intersect+smooth)/(pred_sum+gt_sum+smooth);
+                        % dice_loss=(1-dice_score);
+                        % v_loss=v_loss+dice_loss;
+
+                        % bce loss
+                        epsilon=1e-7;
+                        pred_clamp=max(min(batch_fold_gt_pred_valid(:),1-epsilon),epsilon);
+                        bce_loss=-mean(batch_fold_gt_valid(:).*log(pred_clamp(:))+(1-batch_fold_gt_valid(:)).*log(1-pred_clamp(:)),'all');
+                        v_loss=v_loss+bce_loss;
+
+                        % bce logit loss
+                        % bce_loss=mean(max(batch_fold_gt_pred_valid(:),0) - batch_fold_gt_pred_valid(:).*batch_fold_gt_valid(:) + log(1+exp(-abs(batch_fold_gt_pred_valid(:)))));
+                        % v_loss=v_loss+bce_loss;
+
+                        % fusion loss
+                        % alpha=0.7;
+                        % v_loss=v_loss+alpha*bce_loss+(1-alpha)*(dice_loss);
+
+                        % mse loss
+                        % batch_fold_gt_pred_valid=squeeze(batch_fold_gt_pred_valid);
+                        % batch_fold_gt_valid=squeeze(batch_fold_gt_valid);
+                        % mse_loss=mean((batch_fold_gt_valid(:)-batch_fold_gt_pred_valid(:)).^2);
+                        % v_loss=v_loss+mse_loss;
+
+                        % tversky loss
+                        epsilon=1e-6;
+                        alpha=0.3;
+                        beta=0.7;
+                        TP=sum(batch_fold_gt_pred_valid(:).*batch_fold_gt_valid(:));
+                        FP=sum(batch_fold_gt_pred_valid(:).*(1-batch_fold_gt_valid(:)));
+                        FN=sum((1-batch_fold_gt_pred_valid(:)).*batch_fold_gt_valid(:));
+                        tversky_loss=1-TP/(TP+alpha*FP+beta*FN+epsilon);
+                        v_loss=v_loss+tversky_loss;
+                    end
+                    % v_dice_loss=dice_loss/(num_valid_sample);
+                    % v_bce_loss=bce_loss/(num_valid_sample);
+                    v_loss=v_loss/(num_valid_sample);
+                    valid_loss(i_fold,epoch,1)=v_loss;
+                    % valid_loss(i_fold,epoch,2)=v_bce_loss;
+                    % valid_loss(i_fold,epoch,3)=v_loss;
+
+                    % Display progress
+                    if mod(epoch, 10) == 0
+                        msg=strcat("Current fold: ", string(i_fold)," Epoch: ", string(epoch), ", training Loss: ", string(t_loss));
+                        disp(msg);
+                        msg=strcat("Current fold: ", string(i_fold)," Epoch: ", string(epoch), ", validation Loss: ", string(v_loss));
+                        disp(msg);
+                    end
+
+                    % check overfitting condition
+                    if epoch>1
+                        % update network only if current validation loss is smaller
+                        % calculate average validation loss for current
+                        % epoch
+                        if v_loss<best_valid_loss
+                            best_valid_loss=v_loss;
+                            net=updated_net;
+                        else
+                            termination_counter=termination_counter+1;
+                        end
+                    else
+                        best_valid_loss=v_loss;
+                        net=updated_net;
+                    end
+
+                    clear v_loss
+
+                    % if the termination_counter hits 10 jumps out the
+                    % training
+                    if termination_counter==50
+                        break_mark_epoch=true;
+                        num_epoch_plot(i_fold,1)=epoch;
+                        net_storage{i_fold,1}=net;
+                        start_epoch=1;
+                        break;
+                    end
+                end
+                % save temporarily intermediate file
+                if ~exist("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp","dir")
+                    mkdir("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp")
+                end
+
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/accumulated_loss.mat","accumulated_loss","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/accumulated_gradient.mat","accumulated_gradient","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/average_gradient.mat","average_gradient","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/average_squared_gradient.mat","average_squared_gradient","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/net.mat","net_storage",'-v7.3')
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/i_fold.mat","i_fold","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/i_sample.mat","i_sample","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/epoch.mat","epoch","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/train_loss.mat","train_loss","-v7.3")
+                save ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/valid_loss.mat","valid_loss","-v7.3")
+
+            end % end of sample
+            
+        end % end of epoch
+    
+        % store the trained outcome
+        net_storage{i_fold,1}=net;
+        num_epoch_plot(i_fold,1)=epoch;
+
+        % clean out unecessary variables
+        clear loss gradients gt_pred_valid
+       
+        % save current training and validation loss
+        save ("~/data/klee232/train_en_face_seg_loss/fine_stage_prototype_256_DVC_triaug_tversky_bce_train_loss.mat", "train_loss")
+        save ("~/data/klee232/valid_en_face_seg_loss/fine_Stage_prototype_256_DVC_triaug_tversky_bce_valid_loss.mat", "valid_loss")
+    end % end of fold
+
+    % delete intermediate files
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/net.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/i_sample.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/i_fold.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/epoch.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/train_loss.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/valid_loss.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/accumulated_loss.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/accumulated_gradient.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/average_gradient.mat");
+    delete ("~/GitHub/adp-3-human-retina/Phase_1_Segmentation/2D data function/training_and_testing_functions/DVC_fine_temp/average_squared_gradient.mat");
+
+
+    % save the trained neural network and delete the intermediate file
+    stored_data_path="~/data/klee232/trained_en_face_seg_model/";
+    prototype_name="trained_fine_prototype_DVC_model_256_";
+    coarse_prototype_name="coarse_model_9_";
+    layer_trained=lyr;
+    augemented="_triaug";
+    loss_function="_tversky_bce.mat";
+    complete_file_name=strcat(stored_data_path,prototype_name, coarse_prototype_name,layer_trained,augemented,loss_function);
+    save(complete_file_name,'net_storage','-v7.3');
+
+
+    %% generate training plot
+    for i_fold=4:num_fold
+        % dice loss
+        figure;
+        plot(1:num_epoch_plot(i_fold,1),train_loss(i_fold,1:num_epoch_plot(i_fold,1),1),1:num_epoch_plot(i_fold,1),valid_loss(i_fold,1:num_epoch_plot(i_fold,1),1));
+        grid on
+        legend('training loss','validation loss');
+        img_title="training bce logit loss plot for fold ";
+        fold_num=string(i_fold);
+        img_full_title=strcat(img_title,fold_num);
+        title(img_full_title);
+        ylabel("tversky + bce loss");
+        xlabel("training epoch");
+    
+        % save training and validation loss plot
+        stored_data_path="~/data/klee232/training_en_face_seg_loss_plot/";
+        prototype_name="prototype_fine_model_256_";
+        coarse_prototype_name="coarse_model_9_";
+        layer_trained=lyr;
+        augemented="_triaug";
+        loss_function="_tversky_bce_";
+        fold_file=string(i_fold);
+        type_file='.fig';
+        full_file_name=strcat(stored_data_path,prototype_name,coarse_prototype_name,layer_trained,augemented,loss_function,fold_file,type_file);
+        saveas(gcf, full_file_name);  % Save as a fig image
+
+        % bce loss
+        % figure;
+        % plot(1:num_epoch_plot(i_fold,1),train_loss(i_fold,1:num_epoch_plot(i_fold,1),2),1:num_epoch_plot(i_fold,1),valid_loss(i_fold,1:num_epoch_plot(i_fold,2),1));
+        % grid on
+        % legend('training loss','validation loss');
+        % img_title="training bce loss plot for fold ";
+        % fold_num=string(i_fold);
+        % img_full_title=strcat(img_title,fold_num);
+        % title(img_full_title);
+        % ylabel("bce loss");
+        % xlabel("training epoch");
+    
+        % save training and validation loss plot
+        % stored_data_path="~/data/klee232/training_en_face_seg_loss_plot/";
+        % prototype_name="rose_model_DVC_fine_64_bce_";
+        % layer_trained=lyr;
+        % augemented="_aug";
+        % loss_function="_fusion_";
+        % fold_file=string(i_fold);
+        % type_file='.fig';
+        % full_file_name=strcat(stored_data_path,prototype_name,layer_trained,augemented,loss_function,fold_file,type_file);
+        % saveas(gcf, full_file_name);  % Save as a fig image
+
+        % fuse loss
+        % figure;
+        % plot(1:num_epoch_plot(i_fold,1),train_loss(i_fold,1:num_epoch_plot(i_fold,1),3),1:num_epoch_plot(i_fold,1),valid_loss(i_fold,1:num_epoch_plot(i_fold,1),3));
+        % grid on
+        % legend('training loss','validation loss');
+        % img_title="training fuse loss plot for fold ";
+        % fold_num=string(i_fold);
+        % img_full_title=strcat(img_title,fold_num);
+        % title(img_full_title);
+        % ylabel("fuse loss");
+        % xlabel("training epoch");
+    
+        % save training and validation loss plot
+        % stored_data_path="~/data/klee232/training_en_face_seg_loss_plot/";
+        % prototype_name="rose_model_DVC_fine_64_fuse_";
+        % layer_trained=lyr;
+        % augemented="_aug";
+        % loss_function="_fusion_";
+        % fold_file=string(i_fold);
+        % type_file='.fig';
+        % full_file_name=strcat(stored_data_path,prototype_name,layer_trained,augemented,loss_function,fold_file,type_file);
+        % saveas(gcf, full_file_name);  % Save as a fig image
+    end
+   
+
+    %% return trained neural network
+    trained_network=net_storage;
+    
+
+    toc
+end
+
+
+% Model gradients function
+function [gradients, loss] = modelGradients(network, data, gt_data)
+    
+    %% Forward Pass
+    gt_pred = forward(network, data); 
+
+    %% Backward Pass
+    %% calculate loss
+    % dice loss
+    % dice_loss=0;
+    current_lyr_gt_pred=squeeze(gt_pred);
+    current_lyr_gt_data=squeeze(gt_data);
+    % smooth=1e-7;
+    % intersect=sum(current_lyr_gt_pred(:).*current_lyr_gt_data(:));
+    % pred_sum=sum(current_lyr_gt_pred(:));
+    % gt_sum=sum(current_lyr_gt_data(:));
+    % dice_score=(2*intersect+smooth)/(pred_sum+gt_sum+smooth);
+    % dice_loss=dice_loss+(1-dice_score);
+    % dice_loss=dlarray(dice_loss);
+
+
+    % binary cross entropy loss
+    epsilon=1e-7;
+    pred_clamp=max(min(current_lyr_gt_pred(:),1-epsilon),epsilon);
+    bce_loss=-mean(current_lyr_gt_data(:).*log(pred_clamp(:))+(1-current_lyr_gt_data(:)).*log(1-pred_clamp(:)),'all');
+
+    % bce logit loss
+    % bce_loss=mean(max(current_lyr_gt_pred(:),0) - current_lyr_gt_pred(:).*current_lyr_gt_data(:) + log(1+exp(-abs(current_lyr_gt_pred(:)))));
+
+
+    % mse loss
+    % current_lyr_gt_pred=squeeze(gt_pred);
+    % current_lyr_gt_data=squeeze(gt_data);
+    % mse_loss=mean((current_lyr_gt_data(:)-current_lyr_gt_pred(:)).^2);
+    % mse_loss=dlarray(mse_loss);
+
+    % tversky loss
+    epsilon=1e-6;
+    alpha=0.3;
+    beta=0.7;
+    TP=sum(current_lyr_gt_pred(:).*current_lyr_gt_data(:));
+    FP=sum(current_lyr_gt_pred(:).*(1-current_lyr_gt_data(:)));
+    FN=sum((1-current_lyr_gt_pred(:)).*current_lyr_gt_data(:));
+    tversky_loss=1-TP/(TP+alpha*FP+beta*FN+epsilon);
+
+    %% backpropagation
+    % alpha=0.7;
+    % total_loss=alpha*bce_loss+(1-alpha)*dice_loss;
+    % total_loss=dlarray(total_loss);
+    loss=tversky_loss+bce_loss;
+    gradients = dlgradient(loss, network.Learnables, 'RetainData',false); 
+
+end

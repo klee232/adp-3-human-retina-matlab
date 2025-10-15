@@ -1,0 +1,65 @@
+% Created by Kuan-Min Lee
+% Created date: Dec. 5th, 2024
+% All rights reserved to Leelab.ai
+
+% Brief User Introduction:
+% This is the customized neural network layer which serves as the function
+% of patch mean removal 
+
+% Input Parameter:
+% patch_size: size of patch for patch formation
+% input: original input feature
+
+% Output Parameter:
+% output: processed array (4D array with size of [depth, patch_size,
+% patch_size, number_patch])
+classdef res_dblock_spatial_dropout_layer < nnet.layer.Layer & nnet.layer.Formattable
+
+    properties
+        Probability
+    end
+
+    properties(State)
+        Mask
+    end
+    
+    methods
+
+        %% Constructor for the layer
+        function layer = res_dblock_spatial_dropout_layer(name,probability)
+           layer.Name = name;
+           layer.Description="feature map randomly dropout for res decoder block";
+           layer.Probability=probability;
+        end
+
+        %% prediction (inference)
+        function [output,state]=predict(layer,input)
+            output=input;
+            state=[];
+        end
+
+        %% Forward pass: feature map dropout with given probability
+        function [output,state,memory]=forward(layer,input)
+            %% drop off (set to zeros to random channel feature map
+            num_feat=size(input,3);
+            drop_probability=layer.Probability;
+            drop_mask=rand([1 1 num_feat 1], 'like', input) > drop_probability;
+            layer.Mask=drop_mask;
+            output=input.*drop_mask;
+            output=dlarray(output,"SSCB");
+            state=[];
+            memory=drop_mask;
+        end
+
+
+        %% Backward pass (back propagation)
+        function dLdX=backward(layer, input, output, dLdZ, memory)
+           if isempty(state)
+               dLdX=dLdZ;
+           else
+               dLdX=dLdZ.*memory;
+           end
+        end
+       
+    end
+end
